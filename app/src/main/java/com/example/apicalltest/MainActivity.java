@@ -10,6 +10,8 @@ import android.widget.Toast;
 
 import com.example.apicalltest.ui.main.MainFragment;
 
+import org.opencv.android.OpenCVLoader;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -25,6 +27,11 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.container, MainFragment.newInstance())
                     .commitNow();
         }
+
+        if (OpenCVLoader.initDebug()) {
+            Log.d("myTag", "OpenCV loaded");
+        }
+        Log.d("myTag", ":)");
 
     }
 

@@ -8,6 +8,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
+import org.opencv.objdetect.QRCodeDetector;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -17,6 +18,7 @@ import android.view.WindowManager;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class Tutorial1Activity extends CameraActivity implements CvCameraViewListener2 {
     private static final String TAG = "OCVSample::Activity";
@@ -24,6 +26,9 @@ public class Tutorial1Activity extends CameraActivity implements CvCameraViewLis
     private CameraBridgeViewBase mOpenCvCameraView;
     private boolean              mIsJavaCamera = true;
     private MenuItem             mItemSwitchCamera = null;
+
+
+    QRCodeDetector qrCodeDetector;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -61,6 +66,7 @@ public class Tutorial1Activity extends CameraActivity implements CvCameraViewLis
         mOpenCvCameraView.setCameraIndex(1);
 
         mOpenCvCameraView.setCvCameraViewListener(this);
+        qrCodeDetector = new QRCodeDetector();
     }
 
     @Override
@@ -102,6 +108,10 @@ public class Tutorial1Activity extends CameraActivity implements CvCameraViewLis
     }
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
+        String out = qrCodeDetector.detectAndDecode(inputFrame.rgba());
+        if (!Objects.equals(out, "")){
+            Log.d("qrFound", out);
+        }
         return inputFrame.rgba();
     }
 }

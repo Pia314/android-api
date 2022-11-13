@@ -58,6 +58,7 @@ public class Tutorial1Activity extends CameraActivity implements CvCameraViewLis
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.tutorial1_activity_java_surface_view);
 
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+        mOpenCvCameraView.setCameraIndex(1);
 
         mOpenCvCameraView.setCvCameraViewListener(this);
     }

@@ -2,6 +2,7 @@ package com.example.apicalltest;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -128,6 +129,15 @@ public class MainActivity extends AppCompatActivity {
 
     public void testRetrieve(View view){
         retrieveMessageForMe("blue");
+    }
+
+    public void nextActivity1(View view) {
+        Intent nextActivityIntent = new Intent(this, PairingActivity.class);
+        startActivity(nextActivityIntent);
+    }
+    public void nextActivity2(View view) {
+        Intent nextActivityIntent = new Intent(this, Tutorial1Activity.class);
+        startActivity(nextActivityIntent);
     }
 }
 

@@ -10,7 +10,9 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.objdetect.QRCodeDetector;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.SurfaceView;
@@ -24,11 +26,10 @@ public class Tutorial1Activity extends CameraActivity implements CvCameraViewLis
     private static final String TAG = "OCVSample::Activity";
 
     private CameraBridgeViewBase mOpenCvCameraView;
-    private boolean              mIsJavaCamera = true;
-    private MenuItem             mItemSwitchCamera = null;
-
 
     QRCodeDetector qrCodeDetector;
+
+    String username = "DEFAULT";
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -67,6 +68,8 @@ public class Tutorial1Activity extends CameraActivity implements CvCameraViewLis
 
         mOpenCvCameraView.setCvCameraViewListener(this);
         qrCodeDetector = new QRCodeDetector();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        username = preferences.getString("username", "DEFAULT");
     }
 
     @Override
@@ -111,6 +114,7 @@ public class Tutorial1Activity extends CameraActivity implements CvCameraViewLis
         String out = qrCodeDetector.detectAndDecode(inputFrame.rgba());
         if (!Objects.equals(out, "")){
             Log.d("qrFound", out);
+            Log.d("qrFound", username);
         }
         return inputFrame.rgba();
     }

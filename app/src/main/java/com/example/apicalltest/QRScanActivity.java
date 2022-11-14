@@ -1,5 +1,7 @@
 package com.example.apicalltest;
 
+import static com.example.apicalltest.ActionGestures.retrieveAction;
+
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
@@ -10,16 +12,27 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.objdetect.QRCodeDetector;
 
+import android.animation.AnimatorSet;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.WindowManager;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.Switch;
 import android.widget.Toast;
+
+import androidx.appcompat.widget.SwitchCompat;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +47,7 @@ import retrofit2.Response;
 
 import com.example.apicalltest.APIStructures.Message;
 import com.example.apicalltest.APIStructures.MessageOut;
+import com.example.apicalltest.ActionGestures.*;
 
 public class QRScanActivity extends CameraActivity implements CvCameraViewListener2 {
     private static final String TAG = "OCVSample::Activity";
@@ -75,7 +89,8 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.tutorial1_activity_java_surface_view);
 
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-        mOpenCvCameraView.setCameraIndex(0);
+        mOpenCvCameraView.setCameraIndex(ARApplication.CAMERA);
+        mOpenCvCameraView.setAlpha(0);
 
         mOpenCvCameraView.setCvCameraViewListener(this);
         qrCodeDetector = new QRCodeDetector();
@@ -99,7 +114,7 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
             }
         }, 1000, 1000);
         cooldownMap = new HashMap<String, Integer>();
-        Switch mySwitch = (Switch) findViewById(R.id.switch1);
+        SwitchCompat mySwitch = (SwitchCompat) findViewById(R.id.switch1);
         mySwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 cooldownMap.clear();
@@ -115,6 +130,16 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
                     username = "red";
                 }
                 editor.apply();
+            }
+        });
+        SwitchCompat mySwitch2 = (SwitchCompat) findViewById(R.id.switch2);
+        mySwitch2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    findViewById(R.id.tutorial1_activity_java_surface_view).setAlpha(1);
+                }else{
+                    findViewById(R.id.tutorial1_activity_java_surface_view).setAlpha(0);
+                }
             }
         });
     }
@@ -174,54 +199,6 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
         return inputFrame.rgba();
     }
 
-    public enum MyGesture{
-        PICK,
-        DROP
-    }
-
-    public HashMap<String, MyGesture> gestureHashMap = new HashMap<String, MyGesture>(){{
-        put("PICK", MyGesture.PICK);
-        put("DROP", MyGesture.DROP);
-    }};
-
-    public static class MyAction{
-        private String username;
-        private MyGesture gesture;
-
-        public MyAction(String u, MyGesture g){
-            this.username = u;
-            this.gesture = g;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public MyGesture getGesture() {
-            return gesture;
-        }
-
-        public void setGesture(MyGesture gesture) {
-            this.gesture = gesture;
-        }
-    }
-
-    public MyAction retrieveAction(String input){
-        if (input.equals("") || input.split(" ").length != 2){
-            return null;
-        }
-        String[] parts = input.split(" ");
-        String potentialUsername = parts[0];
-        String potentialGesture = parts[1];
-        if (!gestureHashMap.containsKey(potentialGesture)){
-            return null;
-        };
-        return new MyAction(potentialUsername, gestureHashMap.get(potentialGesture));
-    }
 
     boolean allowForeignControl = true; // Allows other users to take files from your phone
 
@@ -229,7 +206,9 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
         if (action.getGesture().equals(MyGesture.DROP)){
             //TODO Retrieve file from api linked with action username
             retrieveMessage(username, action.getUsername());
+            animateColor("#00FF00");
         }else if (action.getGesture().equals(MyGesture.PICK)){
+            animateColor("#FF0000");
             if (username.equals(action.getUsername())) {
                 // My hand is on my phone
                 //Send file to api EVERYONE, openable by me
@@ -316,6 +295,40 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
 
     public void myViewer(String str){
         Toast.makeText(getApplicationContext(), str, Toast.LENGTH_LONG).show();
+    }
+
+    public void animateColor(String color){
+        FrameLayout frameLayout = findViewById(R.id.michel);
+        Animation animation1 = new AlphaAnimation(0, 1); // Change alpha
+        animation1.setDuration(100); // duration - half a second
+        animation1.setInterpolator(new LinearInterpolator());
+        animation1.setRepeatMode(Animation.REVERSE);
+        animation1.setRepeatCount(1);
+        animation1.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                frameLayout.setAlpha(0);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        //Animation animation2 = new AlphaAnimation(1, 0); // Change alpha
+        //animation2.setDuration(200); // duration - half a second
+        //animation2.setInterpolator(new LinearInterpolator());
+        /*AnimationSet animationSet = new AnimationSet(false);
+        animationSet.addAnimation(animation1);
+        animationSet.addAnimation(animation2);*/
+        frameLayout.setAlpha(1);
+        frameLayout.setBackgroundColor(Color.parseColor(color));
+        frameLayout.startAnimation(animation1);
     }
 
 }

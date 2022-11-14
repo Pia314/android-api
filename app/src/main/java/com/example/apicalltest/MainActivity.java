@@ -1,17 +1,26 @@
 package com.example.apicalltest;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.apicalltest.ui.main.MainFragment;
 
+import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.w3c.dom.Text;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -19,8 +28,11 @@ import retrofit2.Response;
 import com.example.apicalltest.APIStructures.Message;
 import com.example.apicalltest.APIStructures.MessageOut;
 import com.example.apicalltest.APIStructures.StringOut;
+import com.example.apicalltest.ui.main.TestFragment;
 
 public class MainActivity extends AppCompatActivity {
+
+    String username;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,10 +49,7 @@ public class MainActivity extends AppCompatActivity {
         }
         Log.d("myTag", ":)");
 
-    }
 
-    public void checkUsername(String username){
-        // TODO check if username entered is accepted by API (ie is a color)
     }
 
     public void postMessageFromMeTo(String myUsername, String destUsername, String message){
@@ -133,13 +142,20 @@ public class MainActivity extends AppCompatActivity {
         retrieveMessageForMe("blue");
     }
 
-    public void nextActivity1(View view) {
+    public void goToPairing(View view) {
         Intent nextActivityIntent = new Intent(this, PairingActivity.class);
         startActivity(nextActivityIntent);
     }
-    public void nextActivity2(View view) {
+    public void goToQRScan(View view) {
         Intent nextActivityIntent = new Intent(this, QRScanActivity.class);
         startActivity(nextActivityIntent);
+    }
+    public void goToTest(View view) {
+        FragmentManager manager = getSupportFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction();
+        transaction.replace(R.id.container,TestFragment.newInstance("", ""));
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 }
 

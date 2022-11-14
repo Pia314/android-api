@@ -1,25 +1,33 @@
 package com.example.apicalltest;
 
-import java.util.List;
-
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import com.example.apicalltest.APIStructures.Message;
+
 public interface Api {
 
     String BASE_URL = "https://ar-herokuapp.herokuapp.com/";
     @GET("/")
-    Call<Result> getHello();
+    Call<APIStructures.StringOut> getHello();
 
     @GET("retrieveMessages/{username}")
-    Call<Result> getMessages(@Path("username") String username);
+    Call<APIStructures.MessageOut> getMessages(@Path("username") String username,
+                                               @Query("requester") String requester);
 
     @POST("sendMessageTo/{username}")
-    Call<Result> sendMessage(
+    Call<Message> sendMessage(
             @Path("username") String destUsername,
             @Query("sender") String senderUsername,
-            @Query("msg") String message);
+            @Query("msg") String message,
+            @Query("openableBy") String openableBy);
+
+    @POST("sendMessageTo")
+    Call<Message> sendMessageToEveryone(
+            @Query("sender") String senderUsername,
+            @Query("msg") String message,
+            @Query("openableBy") String openableBy);
 }

@@ -29,9 +29,9 @@
         android:theme="@style/Theme.APICallTest"
         tools:targetApi="31">
         <activity
-            android:name=".Tutorial1Activity"
+            android:name=".QRScanActivity"
             android:exported="false"
-            android:screenOrientation="reverseLandscape"
+            android:screenOrientation="portrait"
             android:configChanges="keyboardHidden|orientation">
             <meta-data
                 android:name="android.app.lib_name"

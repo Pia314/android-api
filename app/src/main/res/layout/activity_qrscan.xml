@@ -29,11 +29,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:minHeight="48dp"
-        android:rotationX="0"
         android:text="Show camera output"
         android:textColor="#FF0000"
         android:translationX="10dp"
         android:translationY="40dp" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Last message:"
+        android:translationX="10dp"
+        android:translationY="90dp"/>
 
     <FrameLayout
         android:id="@+id/michel"

@@ -55,13 +55,24 @@ public class APIStructures {
         @SerializedName("messageString")
         private String messageString;
 
+        @SerializedName("sender")
+        private String sender;
+
 
         public Message(String message) {
             this.messageString = message;
         }
 
-        public String get() {
+        public String getMessageString() {
             return messageString;
+        }
+
+        public String getSender() {
+            return sender;
+        }
+
+        public String asOutputMessage(){
+            return messageString + " from " + sender + " !";
         }
     }
 

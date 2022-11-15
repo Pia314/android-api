@@ -30,6 +30,7 @@ import android.view.animation.LinearInterpolator;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.widget.SwitchCompat;
@@ -57,6 +58,7 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
     QRCodeDetector qrCodeDetector;
 
     String username = "DEFAULT";
+    String lastMessage = "NO LAST MESSAGE";
 
     HashMap<String, Integer> cooldownMap;
     Timer cooldownTimer;
@@ -97,22 +99,7 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         username = preferences.getString("username", "DEFAULT");
         cooldownTimer = new Timer();
-        cooldownTimer.scheduleAtFixedRate(new TimerTask()
-        {
-            public void run()
-            {
-                if (!cooldownMap.isEmpty()){
-                    for (String s: cooldownMap.keySet()){
-                        Integer i = cooldownMap.get(s);
-                        if (i == 0){
-                            cooldownMap.remove(s);
-                        }else{
-                            cooldownMap.put(s, i-1);
-                        }
-                    }
-                }
-            }
-        }, 1000, 1000);
+        startTimer();
         cooldownMap = new HashMap<String, Integer>();
         SwitchCompat mySwitch = (SwitchCompat) findViewById(R.id.switch1);
         mySwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -142,6 +129,26 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
                 }
             }
         });
+        refreshText();
+    }
+
+    public void startTimer(){
+        cooldownTimer.scheduleAtFixedRate(new TimerTask()
+        {
+            public void run()
+            {
+                if (!cooldownMap.isEmpty()){
+                    for (String s: cooldownMap.keySet()){
+                        Integer i = cooldownMap.get(s);
+                        if (i == 0){
+                            cooldownMap.remove(s);
+                        }else{
+                            cooldownMap.put(s, i-1);
+                        }
+                    }
+                }
+            }
+        }, 1000, 1000);
     }
 
     @Override
@@ -150,6 +157,8 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
         super.onPause();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
+        cooldownTimer.cancel();
+        cooldownMap.clear();
     }
 
     @Override
@@ -163,6 +172,7 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
+        startTimer();
     }
 
     @Override
@@ -276,12 +286,10 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
                 MessageOut result = response.body();
                 try {
                     Message msg = result.get();
-                    String msgString = msg.get();
-                    if (msgString == "No message found") {
-                        //TODO add a sucess int in the response to check instead of the message
-                    }else {
-                        myViewer(msgString);
-                    }
+                    String out = msg.asOutputMessage();
+                    myViewer(out);
+                    lastMessage = out;
+                    refreshText();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -291,6 +299,11 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
                 myViewer("ERROR");
             }
         });
+    }
+
+    public void refreshText(){
+        String startMessage = "Last message:\n" + lastMessage;
+        ((TextView) findViewById(R.id.textView3)).setText(startMessage);
     }
 
     public void myViewer(String str){
@@ -320,12 +333,6 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
 
             }
         });
-        //Animation animation2 = new AlphaAnimation(1, 0); // Change alpha
-        //animation2.setDuration(200); // duration - half a second
-        //animation2.setInterpolator(new LinearInterpolator());
-        /*AnimationSet animationSet = new AnimationSet(false);
-        animationSet.addAnimation(animation1);
-        animationSet.addAnimation(animation2);*/
         frameLayout.setAlpha(1);
         frameLayout.setBackgroundColor(Color.parseColor(color));
         frameLayout.startAnimation(animation1);

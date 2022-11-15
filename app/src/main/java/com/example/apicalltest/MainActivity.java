@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
                 MessageOut result = response.body();
                 try {
                     Message msg = result.get();
-                    String msgString = msg.get();
+                    String msgString = msg.getMessageString();
                     if (msgString == "No message found") {
                         //TODO add a sucess int in the response to check instead of the message
                     }else {

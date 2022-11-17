@@ -17,3 +17,7 @@ dependencyResolutionManagement {
 rootProject.name = "APICallTest"
 include ':app'
 include ':openCVSDK'
+include ':OpenCVSDK'
+include ':facemesh'
+include ':facedetection'
+include ':hands'

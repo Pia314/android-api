@@ -11,7 +11,11 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/OpenCVSDK" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/facedetection" />
+            <option value="$PROJECT_DIR$/facemesh" />
+            <option value="$PROJECT_DIR$/hands" />
             <option value="$PROJECT_DIR$/openCVSDK" />
           </set>
         </option>

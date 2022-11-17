@@ -139,5 +139,9 @@ public class MainActivity extends AppCompatActivity {
         Intent nextActivityIntent = new Intent(this, Tutorial1Activity.class);
         startActivity(nextActivityIntent);
     }
+    public void nextActivity3(View view) {
+        Intent nextActivityIntent = new Intent(this, HandsActivity.class);
+        startActivity(nextActivityIntent);
+    }
 }
 

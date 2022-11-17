@@ -1,23 +1,38 @@
 package com.example.apicalltest;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.apicalltest.ui.main.MainFragment;
 
+import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.w3c.dom.Text;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.example.apicalltest.APIStructures.Message;
+import com.example.apicalltest.APIStructures.MessageOut;
+import com.example.apicalltest.APIStructures.StringOut;
+import com.example.apicalltest.ui.main.TestFragment;
 
 public class MainActivity extends AppCompatActivity {
+
+    String username;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,21 +49,16 @@ public class MainActivity extends AppCompatActivity {
         }
         Log.d("myTag", ":)");
 
-    }
 
-    String USERNAME = "green";
-
-    public void checkUsername(String username){
-        // TODO check if username entered is accepted by API (ie is a color)
     }
 
     public void postMessageFromMeTo(String myUsername, String destUsername, String message){
-        Call<Result> call = RetrofitClient.getInstance().getMyApi().sendMessage(destUsername, myUsername, message);
+        Call<Message> call = RetrofitClient.getInstance().getMyApi().sendMessage(destUsername, myUsername, message, null);
         Log.d("d", call.request().toString());
-        call.enqueue(new Callback<Result>() {
+        call.enqueue(new Callback<Message>() {
             @Override
-            public void onResponse(Call<Result> call, Response<Result> response) {
-                Result result = response.body();
+            public void onResponse(Call<Message> call, Response<Message> response) {
+                Message result = response.body();
                 Log.d("d", response.toString());
                 try {
                     myViewer("Message uploaded.");
@@ -58,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<Result> call, Throwable t) {
+            public void onFailure(Call<Message> call, Throwable t) {
                 myViewer("ERROR on upload.");
             }
         });
@@ -66,35 +76,36 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void retrieveMessageForMe(String username){
-        Call<Result> call = RetrofitClient.getInstance().getMyApi().getMessages(username);
-        call.enqueue(new Callback<Result>() {
+        Call<MessageOut> call = RetrofitClient.getInstance().getMyApi().getMessages(username, null);
+        call.enqueue(new Callback<MessageOut>() {
             @Override
-            public void onResponse(Call<Result> call, Response<Result> response) {
-                Result result = response.body();
+            public void onResponse(Call<MessageOut> call, Response<MessageOut> response) {
+                MessageOut result = response.body();
                 try {
-                    String msg = result.get();
-                    if (msg == "No message found") {
+                    Message msg = result.get();
+                    String msgString = msg.getMessageString();
+                    if (msgString == "No message found") {
                         //TODO add a sucess int in the response to check instead of the message
                     }else {
-                        myViewer(result.get());
+                        myViewer(msgString);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
             @Override
-            public void onFailure(Call<Result> call, Throwable t) {
+            public void onFailure(Call<MessageOut> call, Throwable t) {
                 myViewer("ERROR");
             }
         });
     }
 
     public void retrieveTestCall(){
-        Call<Result> call = RetrofitClient.getInstance().getMyApi().getHello();
-        call.enqueue(new Callback<Result>() {
+        Call<StringOut> call = RetrofitClient.getInstance().getMyApi().getHello();
+        call.enqueue(new Callback<StringOut>() {
             @Override
-            public void onResponse(Call<Result> call, Response<Result> response) {
-                Result result = response.body();
+            public void onResponse(Call<StringOut> call, Response<StringOut> response) {
+                StringOut result = response.body();
                 try {
                     myViewer(result.get());
                 } catch (Exception e) {
@@ -103,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<Result> call, Throwable t) {
+            public void onFailure(Call<StringOut> call, Throwable t) {
                 myViewer("ERROR");
             }
 
@@ -131,17 +142,24 @@ public class MainActivity extends AppCompatActivity {
         retrieveMessageForMe("blue");
     }
 
-    public void nextActivity1(View view) {
+    public void goToPairing(View view) {
         Intent nextActivityIntent = new Intent(this, PairingActivity.class);
         startActivity(nextActivityIntent);
     }
-    public void nextActivity2(View view) {
-        Intent nextActivityIntent = new Intent(this, Tutorial1Activity.class);
+    public void goToQRScan(View view) {
+        Intent nextActivityIntent = new Intent(this, QRScanActivity.class);
         startActivity(nextActivityIntent);
     }
     public void nextActivity3(View view) {
         Intent nextActivityIntent = new Intent(this, HandsActivity.class);
         startActivity(nextActivityIntent);
+    }
+    public void goToTest(View view) {
+        FragmentManager manager = getSupportFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction();
+        transaction.replace(R.id.container,TestFragment.newInstance("", ""));
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 }
 

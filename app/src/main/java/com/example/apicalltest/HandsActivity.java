@@ -41,6 +41,7 @@ import com.google.mediapipe.solutions.hands.HandsResult;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 /** Main activity of MediaPipe Hands app. */
 public class HandsActivity extends AppCompatActivity {
@@ -371,5 +372,42 @@ public class HandsActivity extends AppCompatActivity {
             "MediaPipe Hand wrist world coordinates (in meters with the origin at the hand's"
                 + " approximate geometric center): x=%f m, y=%f m, z=%f m",
             wristWorldLandmark.getX(), wristWorldLandmark.getY(), wristWorldLandmark.getZ()));
+  }
+
+
+  private boolean isStartSharingPosition(HandsResult result){
+    // here i want to code if the start position (first three landmarks are together and changing z coordinates in the right direction)
+
+    //to access the landmarks
+    List<NormalizedLandmark> landmarkList = result.multiHandLandmarks().get(0).getLandmarkList();
+    // See here https://google.github.io/mediapipe/solutions/hands.html#hand-landmark-model
+    float[] thumb_tip = {landmarkList.get(4).getX(), landmarkList.get(8).getY(), landmarkList.get(8).getZ()};
+    float[] index_finger_tip = {landmarkList.get(8).getX(), landmarkList.get(4).getY(), landmarkList.get(4).getZ()};
+    float[] middle_finger_tip = {landmarkList.get(12).getX(), landmarkList.get(12).getY(), landmarkList.get(12).getZ()};
+    float[] ring_finger_tip = {landmarkList.get(16).getX(), landmarkList.get(16).getY(), landmarkList.get(16).getZ()};
+
+    // are three of the for point near together?
+    boolean threeFingersTogether = AreThreeFingersTogether(thumb_tip, index_finger_tip, middle_finger_tip, ring_finger_tip);
+    float [] z_coordinatesList;
+
+    if(threeFingersTogether){
+      // if yes add mean of z coordinates to List
+    }
+
+    if (2 >= 3){
+      //if (z_coordinatesList[0] - z_coordinatesList[z_coordinatesList.length] > 1) {
+      // return true ; // not sure if it should be positive or negative and which distance
+    }
+    return false;
+  }
+
+  private boolean AreThreeFingersTogether(float[] thumb_tip, float[] index_finger_tip, float[] middle_finger_tip, float[] ring_finger_tip){
+    //Toast.makeText(getApplicationContext(), "thumb_tip"+ thumb_tip[0] + "" + thumb_tip[1] + "" + thumb_tip[2], Toast.LENGTH_LONG).show();
+    return true;
+  }
+
+  private boolean isReceivingPosition(HandsResult result){
+    // here i want to code if receiving position (first three landmarks are together and changing z coordinates in the right (going closer to the screen) direction)
+    return false;
   }
 }

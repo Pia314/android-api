@@ -26,6 +26,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.List;
 
+import android.widget.Toast;
+
 /** A custom implementation of {@link ResultGlRenderer} to render {@link HandsResult}. */
 public class HandsResultGlRenderer implements ResultGlRenderer<HandsResult> {
   private static final String TAG = "HandsResultGlRenderer";
@@ -105,6 +107,18 @@ public class HandsResultGlRenderer implements ResultGlRenderer<HandsResult> {
             isLeftHand ? LEFT_HAND_HOLLOW_CIRCLE_COLOR : RIGHT_HAND_HOLLOW_CIRCLE_COLOR);
       }
     }
+     // here we can start to code the detection... 
+    if (isStartSharingPosition(result)){
+         Toast.makeText(getApplicationContext(), "StartPosition erkannt", Toast.LENGTH_LONG).show();
+         // here we have to send the picture
+         // I want to user the method from QRScanActivity: postMessageToEveryone()
+    }
+    if (isReceivingPosition(result)){
+         Toast.makeText(getApplicationContext(), "ReceivingPosition erkannt", Toast.LENGTH_LONG).show();
+         // here we have to receive the picture
+         // I want to use the method from QR Scan Activity: retrieveMessage but i dont have a username...
+    }
+    
   }
 
   /**
@@ -115,6 +129,40 @@ public class HandsResultGlRenderer implements ResultGlRenderer<HandsResult> {
   public void release() {
     GLES20.glDeleteProgram(program);
   }
+
+  private boolean isStartSharingPosition(HandsResult result){
+    // here i want to code if the start position (first three landmarks are together and changing z coordinates in the right direction)
+
+    //to acces the landmarks 
+    landmarkList = result.multiHandLandmarks().get(0).getLandmarkList()
+    thumb_tip = [landmarkList.get(4).getX() , landmarkList.get(4).getY(), landmarkList.get(4).getZ()]  // maybe we have to multiply with image width ?
+    index_finger_tip = [landmarkList.get(8).getX() , landmarkList.get(8).getY(), landmarkList.get(8).getZ()]
+    middle_finger_tip = [landmarkList.get(12).getX() , landmarkList.get(12).getY(), landmarkList.get(12).getZ()]
+    ring_finger_tip = [landmarkList.get(16).getX() , landmarkList.get(16).getY(), landmarkList.get(16).getZ() ]
+
+    // are three of the for point near togehter? 
+    boolean threeFingersTogether = AreThreeFingersTogehter(thump_tip, index_finger_tip, middle_finger_tip, ring_finger_tip)
+    // if yes add mean of z cordinates to List 
+    z_coordinatesList = [];
+    if (z_coordinatesList.length() >= 3){
+      if (z_coordinatesList[0] - z_coordinatesList[z_coordinatesList.length()] > 1) {
+        return true  // not sure if it should be positive or negative and which distance
+      }
+    }
+    return false
+
+  }
+
+  private boolean AreThreeFingersTogehter(float[] thump_tip, float[] index_finger_tip, float[] middle_finger_tip, float[] ring_finger_tip){
+    // still to code
+  }
+
+  private boolean isReceivingPosition(HandsResult result){
+     // here i want to code if receiving position (first three landmarks are together and changing z coordinates in the right (going closer to the screen) direction)
+    return false
+  }
+
+
 
   private void drawConnections(List<NormalizedLandmark> handLandmarkList, float[] colorArray) {
     GLES20.glUniform4fv(colorHandle, 1, colorArray, 0);

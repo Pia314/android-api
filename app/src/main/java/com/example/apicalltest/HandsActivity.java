@@ -43,6 +43,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+import com.example.apicalltest.APIStructures.Message;
+import com.example.apicalltest.APIStructures.MessageOut;
+import com.example.apicalltest.ActionGestures.*;
+
 /** Main activity of MediaPipe Hands app. */
 public class HandsActivity extends AppCompatActivity {
   private static final String TAG = "HandsActivity";
@@ -193,21 +201,21 @@ public class HandsActivity extends AppCompatActivity {
     this.inputSource = InputSource.IMAGE;
     // Initializes a new MediaPipe Hands solution instance in the static image mode.
     hands =
-        new Hands(
-            this,
-            HandsOptions.builder()
-                .setStaticImageMode(true)
-                .setMaxNumHands(2)
-                .setRunOnGpu(RUN_ON_GPU)
-                .build());
+            new Hands(
+                    this,
+                    HandsOptions.builder()
+                            .setStaticImageMode(true)
+                            .setMaxNumHands(2)
+                            .setRunOnGpu(RUN_ON_GPU)
+                            .build());
 
     // Connects MediaPipe Hands solution to the user-defined HandsResultImageView.
     hands.setResultListener(
-        handsResult -> {
-          logWristLandmark(handsResult, /*showPixelValues=*/ true);
-          imageView.setHandsResult(handsResult);
-          runOnUiThread(() -> imageView.update());
-        });
+            handsResult -> {
+              logWristLandmark(handsResult, /*showPixelValues=*/ true);
+              imageView.setHandsResult(handsResult);
+              runOnUiThread(() -> imageView.update());
+            });
     hands.setErrorListener((message, e) -> Log.e(TAG, "MediaPipe Hands error:" + message));
 
     // Updates the preview layout.
@@ -222,46 +230,46 @@ public class HandsActivity extends AppCompatActivity {
   private void setupVideoDemoUiComponents() {
     // The Intent to access gallery and read a video file.
     videoGetter =
-        registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-              Intent resultIntent = result.getData();
-              if (resultIntent != null) {
-                if (result.getResultCode() == RESULT_OK) {
-                  glSurfaceView.post(
-                      () ->
-                          videoInput.start(
-                              this,
-                              resultIntent.getData(),
-                              hands.getGlContext(),
-                              glSurfaceView.getWidth(),
-                              glSurfaceView.getHeight()));
-                }
-              }
-            });
+            registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                      Intent resultIntent = result.getData();
+                      if (resultIntent != null) {
+                        if (result.getResultCode() == RESULT_OK) {
+                          glSurfaceView.post(
+                                  () ->
+                                          videoInput.start(
+                                                  this,
+                                                  resultIntent.getData(),
+                                                  hands.getGlContext(),
+                                                  glSurfaceView.getWidth(),
+                                                  glSurfaceView.getHeight()));
+                        }
+                      }
+                    });
     Button loadVideoButton = findViewById(R.id.button_load_video);
     loadVideoButton.setOnClickListener(
-        v -> {
-          stopCurrentPipeline();
-          setupStreamingModePipeline(InputSource.VIDEO);
-          // Reads video from gallery.
-          Intent pickVideoIntent = new Intent(Intent.ACTION_PICK);
-          pickVideoIntent.setDataAndType(MediaStore.Video.Media.INTERNAL_CONTENT_URI, "video/*");
-          videoGetter.launch(pickVideoIntent);
-        });
+            v -> {
+              stopCurrentPipeline();
+              setupStreamingModePipeline(InputSource.VIDEO);
+              // Reads video from gallery.
+              Intent pickVideoIntent = new Intent(Intent.ACTION_PICK);
+              pickVideoIntent.setDataAndType(MediaStore.Video.Media.INTERNAL_CONTENT_URI, "video/*");
+              videoGetter.launch(pickVideoIntent);
+            });
   }
 
   /** Sets up the UI components for the live demo with camera input. */
   private void setupLiveDemoUiComponents() {
     Button startCameraButton = findViewById(R.id.button_start_camera);
     startCameraButton.setOnClickListener(
-        v -> {
-          if (inputSource == InputSource.CAMERA) {
-            return;
-          }
-          stopCurrentPipeline();
-          setupStreamingModePipeline(InputSource.CAMERA);
-        });
+            v -> {
+              if (inputSource == InputSource.CAMERA) {
+                return;
+              }
+              stopCurrentPipeline();
+              setupStreamingModePipeline(InputSource.CAMERA);
+            });
   }
 
   /** Sets up core workflow for streaming mode. */
@@ -269,13 +277,13 @@ public class HandsActivity extends AppCompatActivity {
     this.inputSource = inputSource;
     // Initializes a new MediaPipe Hands solution instance in the streaming mode.
     hands =
-        new Hands(
-            this,
-            HandsOptions.builder()
-                .setStaticImageMode(false)
-                .setMaxNumHands(2)
-                .setRunOnGpu(RUN_ON_GPU)
-                .build());
+            new Hands(
+                    this,
+                    HandsOptions.builder()
+                            .setStaticImageMode(false)
+                            .setMaxNumHands(2)
+                            .setRunOnGpu(RUN_ON_GPU)
+                            .build());
     hands.setErrorListener((message, e) -> Log.e(TAG, "MediaPipe Hands error:" + message));
 
     if (inputSource == InputSource.CAMERA) {
@@ -288,15 +296,15 @@ public class HandsActivity extends AppCompatActivity {
 
     // Initializes a new Gl surface view with a user-defined HandsResultGlRenderer.
     glSurfaceView =
-        new SolutionGlSurfaceView<>(this, hands.getGlContext(), hands.getGlMajorVersion());
+            new SolutionGlSurfaceView<>(this, hands.getGlContext(), hands.getGlMajorVersion());
     glSurfaceView.setSolutionResultRenderer(new HandsResultGlRenderer());
     glSurfaceView.setRenderInputImage(true);
     hands.setResultListener(
-        handsResult -> {
-          logWristLandmark(handsResult, /*showPixelValues=*/ false);
-          glSurfaceView.setRenderData(handsResult);
-          glSurfaceView.requestRender();
-        });
+            handsResult -> {
+              logWristLandmark(handsResult, /*showPixelValues=*/ false);
+              glSurfaceView.setRenderData(handsResult);
+              glSurfaceView.requestRender();
+            });
 
     // The runnable to start camera after the gl surface view is attached.
     // For video input source, videoInput.start() will be called when the video uri is available.
@@ -315,11 +323,11 @@ public class HandsActivity extends AppCompatActivity {
 
   private void startCamera() {
     cameraInput.start(
-        this,
-        hands.getGlContext(),
-        CameraInput.CameraFacing.FRONT,
-        glSurfaceView.getWidth(),
-        glSurfaceView.getHeight());
+            this,
+            hands.getGlContext(),
+            CameraInput.CameraFacing.FRONT,
+            glSurfaceView.getWidth(),
+            glSurfaceView.getHeight());
   }
 
   private void stopCurrentPipeline() {
@@ -344,36 +352,35 @@ public class HandsActivity extends AppCompatActivity {
       return;
     }
     NormalizedLandmark wristLandmark =
-        result.multiHandLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
+            result.multiHandLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
     // For Bitmaps, show the pixel values. For texture inputs, show the normalized coordinates.
     if (showPixelValues) {
       int width = result.inputBitmap().getWidth();
       int height = result.inputBitmap().getHeight();
       Log.i(
-          TAG,
-          String.format(
-              "MediaPipe Hand wrist coordinates (pixel values): x=%f, y=%f",
-              wristLandmark.getX() * width, wristLandmark.getY() * height));
+              TAG,
+              String.format(
+                      "MediaPipe Hand wrist coordinates (pixel values): x=%f, y=%f",
+                      wristLandmark.getX() * width, wristLandmark.getY() * height));
     } else {
       Log.i(
-          TAG,
-          String.format(
-              "MediaPipe Hand wrist normalized coordinates (value range: [0, 1]): x=%f, y=%f",
-              wristLandmark.getX(), wristLandmark.getY()));
+              TAG,
+              String.format(
+                      "MediaPipe Hand wrist normalized coordinates (value range: [0, 1]): x=%f, y=%f",
+                      wristLandmark.getX(), wristLandmark.getY()));
     }
     if (result.multiHandWorldLandmarks().isEmpty()) {
       return;
     }
     Landmark wristWorldLandmark =
-        result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
+            result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
     Log.i(
-        TAG,
-        String.format(
-            "MediaPipe Hand wrist world coordinates (in meters with the origin at the hand's"
-                + " approximate geometric center): x=%f m, y=%f m, z=%f m",
-            wristWorldLandmark.getX(), wristWorldLandmark.getY(), wristWorldLandmark.getZ()));
+            TAG,
+            String.format(
+                    "MediaPipe Hand wrist world coordinates (in meters with the origin at the hand's"
+                            + " approximate geometric center): x=%f m, y=%f m, z=%f m",
+                    wristWorldLandmark.getX(), wristWorldLandmark.getY(), wristWorldLandmark.getZ()));
   }
-
 
   private boolean isStartSharingPosition(HandsResult result){
     // here i want to code if the start position (first three landmarks are together and changing z coordinates in the right direction)
@@ -381,8 +388,8 @@ public class HandsActivity extends AppCompatActivity {
     //to access the landmarks
     List<NormalizedLandmark> landmarkList = result.multiHandLandmarks().get(0).getLandmarkList();
     // See here https://google.github.io/mediapipe/solutions/hands.html#hand-landmark-model
-    float[] thumb_tip = {landmarkList.get(4).getX(), landmarkList.get(8).getY(), landmarkList.get(8).getZ()};
-    float[] index_finger_tip = {landmarkList.get(8).getX(), landmarkList.get(4).getY(), landmarkList.get(4).getZ()};
+    /*float[] thumb_tip = {landmarkList.get(4).getX(), landmarkList.get(4).getY(), landmarkList.get(4).getZ()};
+    float[] index_finger_tip = {landmarkList.get(8).getX(), landmarkList.get(8).getY(), landmarkList.get(8).getZ()};
     float[] middle_finger_tip = {landmarkList.get(12).getX(), landmarkList.get(12).getY(), landmarkList.get(12).getZ()};
     float[] ring_finger_tip = {landmarkList.get(16).getX(), landmarkList.get(16).getY(), landmarkList.get(16).getZ()};
 
@@ -398,11 +405,15 @@ public class HandsActivity extends AppCompatActivity {
       //if (z_coordinatesList[0] - z_coordinatesList[z_coordinatesList.length] > 1) {
       // return true ; // not sure if it should be positive or negative and which distance
     }
+
+     */
     return false;
+
+
   }
 
   private boolean AreThreeFingersTogether(float[] thumb_tip, float[] index_finger_tip, float[] middle_finger_tip, float[] ring_finger_tip){
-    //Toast.makeText(getApplicationContext(), "thumb_tip"+ thumb_tip[0] + "" + thumb_tip[1] + "" + thumb_tip[2], Toast.LENGTH_LONG).show();
+
     return true;
   }
 
@@ -410,4 +421,45 @@ public class HandsActivity extends AppCompatActivity {
     // here i want to code if receiving position (first three landmarks are together and changing z coordinates in the right (going closer to the screen) direction)
     return false;
   }
+
+  private void postMessageToEveryone(String myUsername, String message, String openableBy){
+    Call<APIStructures.Message> call = RetrofitClient.getInstance().getMyApi().sendMessageToEveryone(myUsername, message, openableBy);
+    Log.d("d", call.request().toString());
+    call.enqueue(new Callback<APIStructures.Message>() {
+      @Override
+      public void onResponse(Call<APIStructures.Message> call, Response<APIStructures.Message> response) {
+        APIStructures.Message result = response.body();
+        Log.d("d", response.toString());
+        try {
+          myViewer("Message uploaded.");
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+
+      @Override
+      public void onFailure(Call<APIStructures.Message> call, Throwable t) {
+        myViewer("ERROR on upload.");
+      }
+    });
+  }
+
+private void retrieveMessage(String username, String requester){
+        Call<MessageOut> call = RetrofitClient.getInstance().getMyApi().getMessages(username, requester);
+        call.enqueue(new Callback<MessageOut>() {
+        @Override
+        public void onResponse(Call<MessageOut> call, Response<MessageOut> response){
+          MessageOut result=response.body();
+          try{
+          }catch(Exception e){
+            e.printStackTrace();
+          }
+        }});
+}
+
+private void myViewer(String str){
+        Toast.makeText(getApplicationContext(), str, Toast.LENGTH_LONG).show();
+        }
+
+
 }

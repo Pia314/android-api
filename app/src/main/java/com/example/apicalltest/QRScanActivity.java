@@ -311,4 +311,32 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
         Toast.makeText(getApplicationContext(), str, Toast.LENGTH_LONG).show();
     }
 
+    public void animateColor(String color){
+        FrameLayout frameLayout = findViewById(R.id.michel);
+        Animation animation1 = new AlphaAnimation(0, 1); // Change alpha
+        animation1.setDuration(100); // duration - half a second
+        animation1.setInterpolator(new LinearInterpolator());
+        animation1.setRepeatMode(Animation.REVERSE);
+        animation1.setRepeatCount(1);
+        animation1.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                frameLayout.setAlpha(0);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        frameLayout.setAlpha(1);
+        frameLayout.setBackgroundColor(Color.parseColor(color));
+        frameLayout.startAnimation(animation1);
+
+    }
 }

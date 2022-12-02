@@ -27,6 +27,7 @@ import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -45,6 +46,7 @@ import com.google.mediapipe.solutions.hands.HandsResult;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Call;
@@ -68,7 +70,7 @@ public class HandsActivity extends AppCompatActivity {
 
   boolean canRecognize = true;
 
-  private List<Float> list_z_coordinates=new ArrayList<Float>();
+  private List<Float> list_z_coordinates = new ArrayList<Float>();
 
   private Hands hands;
   // Run the pipeline and the model inference on GPU or CPU.
@@ -80,6 +82,7 @@ public class HandsActivity extends AppCompatActivity {
     VIDEO,
     CAMERA,
   }
+
   private InputSource inputSource = InputSource.UNKNOWN;
 
   // Image demo UI and image loader components.
@@ -141,8 +144,8 @@ public class HandsActivity extends AppCompatActivity {
 
   private Bitmap rotateBitmap(Bitmap inputBitmap, InputStream imageData) throws IOException {
     int orientation =
-        new ExifInterface(imageData)
-            .getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            new ExifInterface(imageData)
+                    .getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
     if (orientation == ExifInterface.ORIENTATION_NORMAL) {
       return inputBitmap;
     }
@@ -161,57 +164,61 @@ public class HandsActivity extends AppCompatActivity {
         matrix.postRotate(0);
     }
     return Bitmap.createBitmap(
-        inputBitmap, 0, 0, inputBitmap.getWidth(), inputBitmap.getHeight(), matrix, true);
+            inputBitmap, 0, 0, inputBitmap.getWidth(), inputBitmap.getHeight(), matrix, true);
   }
 
-  /** Sets up the UI components for the static image demo. */
+  /**
+   * Sets up the UI components for the static image demo.
+   */
   private void setupStaticImageDemoUiComponents() {
     // The Intent to access gallery and read images as bitmap.
     imageGetter =
-        registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-              Intent resultIntent = result.getData();
-              if (resultIntent != null) {
-                if (result.getResultCode() == RESULT_OK) {
-                  Bitmap bitmap = null;
-                  try {
-                    bitmap =
-                        downscaleBitmap(
-                            MediaStore.Images.Media.getBitmap(
-                                this.getContentResolver(), resultIntent.getData()));
-                  } catch (IOException e) {
-                    Log.e(TAG, "Bitmap reading error:" + e);
-                  }
-                  try {
-                    InputStream imageData =
-                        this.getContentResolver().openInputStream(resultIntent.getData());
-                    bitmap = rotateBitmap(bitmap, imageData);
-                  } catch (IOException e) {
-                    Log.e(TAG, "Bitmap rotation error:" + e);
-                  }
-                  if (bitmap != null) {
-                    hands.send(bitmap);
-                  }
-                }
-              }
-            });
+            registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                      Intent resultIntent = result.getData();
+                      if (resultIntent != null) {
+                        if (result.getResultCode() == RESULT_OK) {
+                          Bitmap bitmap = null;
+                          try {
+                            bitmap =
+                                    downscaleBitmap(
+                                            MediaStore.Images.Media.getBitmap(
+                                                    this.getContentResolver(), resultIntent.getData()));
+                          } catch (IOException e) {
+                            Log.e(TAG, "Bitmap reading error:" + e);
+                          }
+                          try {
+                            InputStream imageData =
+                                    this.getContentResolver().openInputStream(resultIntent.getData());
+                            bitmap = rotateBitmap(bitmap, imageData);
+                          } catch (IOException e) {
+                            Log.e(TAG, "Bitmap rotation error:" + e);
+                          }
+                          if (bitmap != null) {
+                            hands.send(bitmap);
+                          }
+                        }
+                      }
+                    });
     Button loadImageButton = findViewById(R.id.button_load_picture);
     loadImageButton.setOnClickListener(
-        v -> {
-          if (inputSource != InputSource.IMAGE) {
-            stopCurrentPipeline();
-            setupStaticImageModePipeline();
-          }
-          // Reads images from gallery.
-          Intent pickImageIntent = new Intent(Intent.ACTION_PICK);
-          pickImageIntent.setDataAndType(MediaStore.Images.Media.INTERNAL_CONTENT_URI, "image/*");
-          imageGetter.launch(pickImageIntent);
-        });
+            v -> {
+              if (inputSource != InputSource.IMAGE) {
+                stopCurrentPipeline();
+                setupStaticImageModePipeline();
+              }
+              // Reads images from gallery.
+              Intent pickImageIntent = new Intent(Intent.ACTION_PICK);
+              pickImageIntent.setDataAndType(MediaStore.Images.Media.INTERNAL_CONTENT_URI, "image/*");
+              imageGetter.launch(pickImageIntent);
+            });
     imageView = new HandsResultImageView(this);
   }
 
-  /** Sets up core workflow for static image mode. */
+  /**
+   * Sets up core workflow for static image mode.
+   */
   private void setupStaticImageModePipeline() {
     this.inputSource = InputSource.IMAGE;
     // Initializes a new MediaPipe Hands solution instance in the static image mode.
@@ -241,7 +248,9 @@ public class HandsActivity extends AppCompatActivity {
     imageView.setVisibility(View.VISIBLE);
   }
 
-  /** Sets up the UI components for the video demo. */
+  /**
+   * Sets up the UI components for the video demo.
+   */
   private void setupVideoDemoUiComponents() {
     // The Intent to access gallery and read a video file.
     videoGetter =
@@ -274,7 +283,9 @@ public class HandsActivity extends AppCompatActivity {
             });
   }
 
-  /** Sets up the UI components for the live demo with camera input. */
+  /**
+   * Sets up the UI components for the live demo with camera input.
+   */
   private void setupLiveDemoUiComponents() {
     Button startCameraButton = findViewById(R.id.button_start_camera);
     startCameraButton.setOnClickListener(
@@ -288,7 +299,9 @@ public class HandsActivity extends AppCompatActivity {
             });
   }
 
-  /** Sets up core workflow for streaming mode. */
+  /**
+   * Sets up core workflow for streaming mode.
+   */
   private void setupStreamingModePipeline(InputSource inputSource) {
     this.inputSource = inputSource;
     // Initializes a new MediaPipe Hands solution instance in the streaming mode.
@@ -397,20 +410,20 @@ public class HandsActivity extends AppCompatActivity {
                             + " approximate geometric center): x=%f m, y=%f m, z=%f m",
                     wristWorldLandmark.getX(), wristWorldLandmark.getY(), wristWorldLandmark.getZ()));
 
-    if(isStartSharingPosition(result)){
+    if (isStartSharingPosition(result)) {
       list_z_coordinates.clear();
       isSendingMessage = true;
       //TODO Make it working
       //stopCurrentPipeline();
-      if(canRecognize) {
+      if (canRecognize) {
         //Toast.makeText(getApplicationContext(), "is Receiving Message is true", Toast.LENGTH_LONG).show();
         canRecognize = false;
       }
       //
-     // postMessageToEveryone("myUsername", "message", "openableBy");
+      // postMessageToEveryone("myUsername", "message", "openableBy");
     }
 
-    if(isReceivingPosition(result)){
+    if (isReceivingPosition(result)) {
       list_z_coordinates.clear();
       isReceivingMessage = true;
       //TODO make ist working
@@ -420,14 +433,20 @@ public class HandsActivity extends AppCompatActivity {
       Log.d(
               "test", "te5st");
 
-      if(canRecognize) {
-       // Toast.makeText(getApplicationContext(), "is Receiving Message is true", Toast.LENGTH_LONG).show();
+      if (canRecognize) {
+        // Toast.makeText(getApplicationContext(), "is Receiving Message is true", Toast.LENGTH_LONG).show();
+        runOnUiThread(new Runnable() {
+          public void run()
+          {
+            Toast.makeText(getApplicationContext(), "is Receiving Message is true", Toast.LENGTH_LONG).show();
+          }
+        });
         canRecognize = false;
       }
     }
   }
 
-  private boolean isStartSharingPosition(HandsResult result){
+  private boolean isStartSharingPosition(HandsResult result) {
     // here i want to code if the start position (first three landmarks are together and changing z coordinates in the right direction)
 
     //to access the landmarks
@@ -457,12 +476,12 @@ public class HandsActivity extends AppCompatActivity {
 
   }
 
-  private boolean AreThreeFingersTogether(float[] thumb_tip, float[] index_finger_tip, float[] middle_finger_tip, float[] ring_finger_tip){
+  private boolean AreThreeFingersTogether(float[] thumb_tip, float[] index_finger_tip, float[] middle_finger_tip) {
 
     return true;
   }
 
-  private boolean isReceivingPosition(HandsResult result){
+  private boolean isReceivingPosition(HandsResult result) {
     // here i want to code if receiving position (first three landmarks are together and changing z coordinates in the right (going closer to the screen) direction)
 
     //to access the landmarks
@@ -482,16 +501,16 @@ public class HandsActivity extends AppCompatActivity {
 
     if (threeFingersTogether) {
       // if yes add mean of z coordinates to List
-      float mean_z_coordinates = (thumb_tip[2] + middle_finger_tip[2])/2;
+      float mean_z_coordinates = (thumb_tip[2] + middle_finger_tip[2]) / 2;
       list_z_coordinates.add(mean_z_coordinates);
     }
 
     if (list_z_coordinates.size() >= 10) {
-      myViewer("diff z coordinates" + (list_z_coordinates.get(list_z_coordinates.size()-1) - list_z_coordinates.get(0)));
-      myViewer("last z coordinates" + list_z_coordinates.get(list_z_coordinates.size()-1) );
+      myViewer("diff z coordinates" + (list_z_coordinates.get(list_z_coordinates.size() - 1) - list_z_coordinates.get(0)));
+      myViewer("last z coordinates" + list_z_coordinates.get(list_z_coordinates.size() - 1));
       myViewer("first z coordinates" + list_z_coordinates.get(0));
-      if ( true) { //(list_z_coordinates.get(list_z_coordinates.size()-1) - list_z_coordinates.get(0) >= Z_DISTANCE)  && ( list_z_coordinates.get(list_z_coordinates.size()-1) >= list_z_coordinates.get(0)) ){
-        myViewer("ReceivingPosition" );
+      if (true) { //(list_z_coordinates.get(list_z_coordinates.size()-1) - list_z_coordinates.get(0) >= Z_DISTANCE)  && ( list_z_coordinates.get(list_z_coordinates.size()-1) >= list_z_coordinates.get(0)) ){
+        myViewer("ReceivingPosition");
         return true;
       }
     }
@@ -499,7 +518,7 @@ public class HandsActivity extends AppCompatActivity {
     return false;
   }
 
-  private void postMessageToEveryone(String myUsername, String message, String openableBy){
+  private void postMessageToEveryone(String myUsername, String message, String openableBy) {
     Call<APIStructures.Message> call = RetrofitClient.getInstance().getMyApi().sendMessageToEveryone(myUsername, message, openableBy);
     Log.d("d", call.request().toString());
     call.enqueue(new Callback<APIStructures.Message>() {
@@ -521,29 +540,14 @@ public class HandsActivity extends AppCompatActivity {
     });
   }
 
-private void retrieveMessage(String username, String requester){
-        Call<MessageOut> call = RetrofitClient.getInstance().getMyApi().getMessages(username, requester);
-        call.enqueue(new Callback<MessageOut>() {
-        @Override
-        public void onResponse(Call<MessageOut> call, Response<MessageOut> response){
-          MessageOut result=response.body();
-          try{
-          }catch(Exception e){
-            e.printStackTrace();
-          }
-        }});
-}
 
-private void myViewer(String str){
-        Toast.makeText(getApplicationContext(), str, Toast.LENGTH_LONG).show();
-        }
 
 
   public void myViewer(String str) {
     // TODO: add View to render Information text. Toast is not working here
     Log.d("d", str);
   }
-  public void animateColor(String color){
+  /*public void animateColor(String color){
     FrameLayout frameLayout = findViewById(R.id.michel);
     Animation animation1 = new AlphaAnimation(0, 1); // Change alpha
     animation1.setDuration(100); // duration - half a second
@@ -570,4 +574,6 @@ private void myViewer(String str){
     frameLayout.setBackgroundColor(Color.parseColor(color));
     frameLayout.startAnimation(animation1);
 
+}
+*/
 }

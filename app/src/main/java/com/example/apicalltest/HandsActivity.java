@@ -16,11 +16,15 @@ package com.example.apicalltest;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
@@ -54,6 +58,17 @@ import com.example.apicalltest.ActionGestures.*;
 /** Main activity of MediaPipe Hands app. */
 public class HandsActivity extends AppCompatActivity {
   private static final String TAG = "HandsActivity";
+
+  private static double DISTANCE = 0.2;
+  private static double Z_DISTANCE = 0.3;
+
+  private boolean isSendingMessage = false;
+
+  private boolean isReceivingMessage = false;
+
+  boolean canRecognize = true;
+
+  private List<Float> list_z_coordinates=new ArrayList<Float>();
 
   private Hands hands;
   // Run the pipeline and the model inference on GPU or CPU.
@@ -268,6 +283,7 @@ public class HandsActivity extends AppCompatActivity {
                 return;
               }
               stopCurrentPipeline();
+              Toast.makeText(getApplicationContext(), "is Receiving Message is true", Toast.LENGTH_LONG).show();
               setupStreamingModePipeline(InputSource.CAMERA);
             });
   }
@@ -380,6 +396,35 @@ public class HandsActivity extends AppCompatActivity {
                     "MediaPipe Hand wrist world coordinates (in meters with the origin at the hand's"
                             + " approximate geometric center): x=%f m, y=%f m, z=%f m",
                     wristWorldLandmark.getX(), wristWorldLandmark.getY(), wristWorldLandmark.getZ()));
+
+    if(isStartSharingPosition(result)){
+      list_z_coordinates.clear();
+      isSendingMessage = true;
+      //TODO Make it working
+      //stopCurrentPipeline();
+      if(canRecognize) {
+        //Toast.makeText(getApplicationContext(), "is Receiving Message is true", Toast.LENGTH_LONG).show();
+        canRecognize = false;
+      }
+      //
+     // postMessageToEveryone("myUsername", "message", "openableBy");
+    }
+
+    if(isReceivingPosition(result)){
+      list_z_coordinates.clear();
+      isReceivingMessage = true;
+      //TODO make ist working
+      //stopCurrentPipeline();
+      //Toast.makeText(getApplicationContext(), "is Receiving Message is true", Toast.LENGTH_LONG).show();
+      //retrieveMessage("username", "requester");
+      Log.d(
+              "test", "te5st");
+
+      if(canRecognize) {
+       // Toast.makeText(getApplicationContext(), "is Receiving Message is true", Toast.LENGTH_LONG).show();
+        canRecognize = false;
+      }
+    }
   }
 
   private boolean isStartSharingPosition(HandsResult result){
@@ -419,6 +464,38 @@ public class HandsActivity extends AppCompatActivity {
 
   private boolean isReceivingPosition(HandsResult result){
     // here i want to code if receiving position (first three landmarks are together and changing z coordinates in the right (going closer to the screen) direction)
+
+    //to access the landmarks
+    List<NormalizedLandmark> landmarkList = result.multiHandLandmarks().get(0).getLandmarkList();
+    // See here https://google.github.io/mediapipe/solutions/hands.html#hand-landmark-model
+    float[] thumb_tip = {landmarkList.get(4).getX(), landmarkList.get(4).getY(), landmarkList.get(4).getZ()};
+    float[] index_finger_tip = {landmarkList.get(8).getX(), landmarkList.get(8).getY(), landmarkList.get(8).getZ()};
+    float[] middle_finger_tip = {landmarkList.get(12).getX(), landmarkList.get(12).getY(), landmarkList.get(12).getZ()};
+    float[] ring_finger_tip = {landmarkList.get(16).getX(), landmarkList.get(16).getY(), landmarkList.get(16).getZ()};
+
+    // are three of the for point near together?
+    boolean threeFingersTogether = AreThreeFingersTogether(thumb_tip, index_finger_tip, middle_finger_tip) || AreThreeFingersTogether(thumb_tip, middle_finger_tip, ring_finger_tip);
+
+    if (threeFingersTogether) {
+
+    }
+
+    if (threeFingersTogether) {
+      // if yes add mean of z coordinates to List
+      float mean_z_coordinates = (thumb_tip[2] + middle_finger_tip[2])/2;
+      list_z_coordinates.add(mean_z_coordinates);
+    }
+
+    if (list_z_coordinates.size() >= 10) {
+      myViewer("diff z coordinates" + (list_z_coordinates.get(list_z_coordinates.size()-1) - list_z_coordinates.get(0)));
+      myViewer("last z coordinates" + list_z_coordinates.get(list_z_coordinates.size()-1) );
+      myViewer("first z coordinates" + list_z_coordinates.get(0));
+      if ( true) { //(list_z_coordinates.get(list_z_coordinates.size()-1) - list_z_coordinates.get(0) >= Z_DISTANCE)  && ( list_z_coordinates.get(list_z_coordinates.size()-1) >= list_z_coordinates.get(0)) ){
+        myViewer("ReceivingPosition" );
+        return true;
+      }
+    }
+
     return false;
   }
 
@@ -461,5 +538,36 @@ private void myViewer(String str){
         Toast.makeText(getApplicationContext(), str, Toast.LENGTH_LONG).show();
         }
 
+
+  public void myViewer(String str) {
+    // TODO: add View to render Information text. Toast is not working here
+    Log.d("d", str);
+  }
+  public void animateColor(String color){
+    FrameLayout frameLayout = findViewById(R.id.michel);
+    Animation animation1 = new AlphaAnimation(0, 1); // Change alpha
+    animation1.setDuration(100); // duration - half a second
+    animation1.setInterpolator(new LinearInterpolator());
+    animation1.setRepeatMode(Animation.REVERSE);
+    animation1.setRepeatCount(1);
+    animation1.setAnimationListener(new Animation.AnimationListener() {
+      @Override
+      public void onAnimationStart(Animation animation) {
+
+      }
+
+      @Override
+      public void onAnimationEnd(Animation animation) {
+        frameLayout.setAlpha(0);
+      }
+
+      @Override
+      public void onAnimationRepeat(Animation animation) {
+
+      }
+    });
+    frameLayout.setAlpha(1);
+    frameLayout.setBackgroundColor(Color.parseColor(color));
+    frameLayout.startAnimation(animation1);
 
 }

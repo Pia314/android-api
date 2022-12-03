@@ -151,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
         startActivity(nextActivityIntent);
     }
     public void nextActivity3(View view) {
-        Intent nextActivityIntent = new Intent(this, HandsActivity.class);
+        Intent nextActivityIntent = new Intent(this, MyHandActivity.class);
         startActivity(nextActivityIntent);
     }
     public void goToTest(View view) {

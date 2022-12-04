@@ -45,7 +45,7 @@
                 android:value="" />
         </activity>
         <activity
-            android:name=".HandsActivity"
+            android:name=".MyHandActivity"
             android:exported="false"
             android:screenOrientation="portrait">
             <meta-data

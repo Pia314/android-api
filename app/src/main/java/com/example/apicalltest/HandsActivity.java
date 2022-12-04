@@ -480,8 +480,8 @@ public class HandsActivity extends AppCompatActivity {
     float y_coordinate_difference_pairwise_sum = Math.abs(finger1[1] - finger2[1]) + Math.abs(finger1[1] - finger3[1]) + Math.abs(finger2[1] - finger3[1]);
     float z_coordinate_difference_pairwise_sum = Math.abs(finger1[2] - finger2[2]) + Math.abs(finger1[2] - finger3[2]) + Math.abs(finger2[2] - finger3[2]);
     boolean x_close = x_coordinate_difference_pairwise_sum <= DISTANCE;
-    boolean y_close = x_coordinate_difference_pairwise_sum <= DISTANCE;
-    boolean z_close = x_coordinate_difference_pairwise_sum <= DISTANCE;
+    boolean y_close = y_coordinate_difference_pairwise_sum <= DISTANCE;
+    boolean z_close = z_coordinate_difference_pairwise_sum <= DISTANCE;
 
     boolean together = (x_close) && (y_close) && (z_close);
 

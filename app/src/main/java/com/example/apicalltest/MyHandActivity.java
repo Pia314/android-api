@@ -31,7 +31,11 @@ public class MyHandActivity extends HandsActivity{
 
     Timer cooldownTimer;
     int cooldown = 0;
-    int  gesture = 0; // 1 for StartingPosition and 2 for ReceivingPosition
+    int  gesture = 0; //  1 for Finger open  && for Finger together 2
+    int counterFingerOpen = 0;
+    int counterFingerTogether = 0;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,26 +93,31 @@ public class MyHandActivity extends HandsActivity{
         }
 
         if(isRecognizingGesture(result)) {
-            if(gesture == 1) {
+            if(gesture == 2) {
                 // PULL
                 // TO uncomment when everything else is working, not before
                 // else it will kill my credit card :)
                 // postMessageToEveryone("myUsername", "message", "openableBy");
                 animateColor("#FF0000");
                 coolToast("START GESTURE RECOGNIZED");
-            } else if ( gesture == 2) {
+                counterFingerOpen = 0;
+                counterFingerTogether = 0;
+                gesture = 0;
+            } else if ( gesture == 1) {
                 // DROP
                 // TO uncomment when everything else is working, not before
                 // else it will kill my credit card :)
                 //retrieveMessage("username", "requester");
                 animateColor("#00FF00");
                 coolToast("RECEIVE GESTURE RECOGNIZED");
+                counterFingerOpen = 0;
+                counterFingerTogether = 0;
+                gesture = 0;
             }
             Log.d("cool", "gesture recogized");
-            list_z_coordinates.clear();
-            cooldown = 5; // 5 SECOINDS OF COOLDOWN
+            //list_z_coordinates.clear();
+            cooldown = 5; // 5 SECONDS OF COOLDOWN
         }
-
     }
 
 
@@ -121,29 +130,61 @@ public class MyHandActivity extends HandsActivity{
         });
     }
 
+    private void setGestureFingerOpen(){
+        if(gesture != 1){
+            counterFingerOpen = 0;
+        }
+        counterFingerOpen++;
+        gesture = 1;
+    }
+
+    private void setGestureFingerTogether(){
+        if(gesture != 2){
+            counterFingerTogether = 0;
+        }
+        counterFingerTogether++;
+        gesture = 2;
+    }
 
     private boolean AreThreeFingersTogether(float[] finger1, float[] finger2, float[] finger3) {
         // TODO PIA
         float x_coordinate_difference_pairwise_sum = Math.abs(finger1[0] - finger2[0]) + Math.abs(finger1[0] - finger3[0]) + Math.abs(finger2[0] - finger3[0]);
         float y_coordinate_difference_pairwise_sum = Math.abs(finger1[1] - finger2[1]) + Math.abs(finger1[1] - finger3[1]) + Math.abs(finger2[1] - finger3[1]);
-        float z_coordinate_difference_pairwise_sum = Math.abs(finger1[2] - finger2[2]) + Math.abs(finger1[2] - finger3[2]) + Math.abs(finger2[2] - finger3[2]);
-        boolean x_close = x_coordinate_difference_pairwise_sum <= 0.75 ;
-        boolean y_close = y_coordinate_difference_pairwise_sum <= 0.2;
-        boolean z_close = z_coordinate_difference_pairwise_sum <= 0.25;
+        //float z_coordinate_difference_pairwise_sum = Math.abs(finger1[2] - finger2[2]) + Math.abs(finger1[2] - finger3[2]) + Math.abs(finger2[2] - finger3[2]);
+        boolean x_close = x_coordinate_difference_pairwise_sum <= 0.25 ;
+        boolean y_close = y_coordinate_difference_pairwise_sum  <= 0.25;
+        //float z_close = z_coordinate_difference_pairwise_sum;// <= 0.25;
 
-        boolean together = (x_close) && (y_close) && (z_close);
+        boolean together = (x_close) && (y_close);
 
-        //myViewer("x_close :" + x_close);
-        //myViewer("y_close :" + y_close);
+        myViewer("x_close :" + x_close);
+        myViewer("y_close :" + y_close);
         //myViewer("z_close :" + z_close);
-        //myViewer("together :" + together);
+       // myViewer("together :" + together);
 
-        return together;
+        return together; // together;
+    }
+
+    private boolean AreThreeFingersOpen(float[] finger1, float[] finger2, float[] finger3) {
+        // TODO PIA
+        float x_coordinate_difference_pairwise_sum = Math.abs(finger1[0] - finger2[0]) + Math.abs(finger1[0] - finger3[0]) + Math.abs(finger2[0] - finger3[0]);
+        float y_coordinate_difference_pairwise_sum = Math.abs(finger1[1] - finger2[1]) + Math.abs(finger1[1] - finger3[1]) + Math.abs(finger2[1] - finger3[1]);
+        //float z_coordinate_difference_pairwise_sum = Math.abs(finger1[2] - finger2[2]) + Math.abs(finger1[2] - finger3[2]) + Math.abs(finger2[2] - finger3[2]);
+        boolean x_open = x_coordinate_difference_pairwise_sum  >  0.25 ;
+        boolean y_open = y_coordinate_difference_pairwise_sum  > 0.25;
+        //float z_close = z_coordinate_difference_pairwise_sum;// <= 0.25;
+
+        boolean open = (x_open) || (y_open);
+
+        myViewer("x_open :" + x_open);
+        myViewer("y_open :" + y_open);
+        //myViewer("z_close :" + z_close);
+        // myViewer("together :" + together);
+
+        return open; // together;
     }
 
     private boolean isRecognizingGesture(HandsResult result) {
-        // TODO PIA
-        //to access the landmarks
         List<LandmarkProto.NormalizedLandmark> landmarkList = result.multiHandLandmarks().get(0).getLandmarkList();
         // See here https://google.github.io/mediapipe/solutions/hands.html#hand-landmark-model
         float[] thumb_tip = {landmarkList.get(4).getX(), landmarkList.get(4).getY(), landmarkList.get(4).getZ()};
@@ -151,36 +192,22 @@ public class MyHandActivity extends HandsActivity{
         float[] middle_finger_tip = {landmarkList.get(12).getX(), landmarkList.get(12).getY(), landmarkList.get(12).getZ()};
         float[] ring_finger_tip = {landmarkList.get(16).getX(), landmarkList.get(16).getY(), landmarkList.get(16).getZ()};
 
-        // are three of the for point near together?
         boolean threeFingersTogether = AreThreeFingersTogether(thumb_tip, index_finger_tip, middle_finger_tip) || AreThreeFingersTogether(thumb_tip, middle_finger_tip, ring_finger_tip);
+        boolean threeFingersOpen = AreThreeFingersOpen(thumb_tip, index_finger_tip, middle_finger_tip) || AreThreeFingersOpen(thumb_tip, middle_finger_tip, ring_finger_tip);
 
         if (threeFingersTogether) {
-            // if yes add mean of z coordinates to List
-            myViewer("thumb_tip" + thumb_tip[2]);
-            myViewer("index_finger_tip" + index_finger_tip[2]);
-            myViewer("middle_finger_tip" + middle_finger_tip[2]);
-            myViewer("ring_finger_tip" + ring_finger_tip[2]);
-            float mean_z_coordinates = (thumb_tip[2] + index_finger_tip[2] + middle_finger_tip[2] + ring_finger_tip[2] )/4;
-            list_z_coordinates.add(mean_z_coordinates);list_z_coordinates.get(0);
+            setGestureFingerTogether();
+        } else if (threeFingersOpen) {
+            setGestureFingerOpen();
+        } else {
+            gesture = 0;
+            counterFingerOpen = 0;
+            counterFingerTogether = 0;
         }
 
-        if (list_z_coordinates.size() >= 6) {
-            float first_entry_z_coordinates = list_z_coordinates.get(0);
-            float last_entry_z_coordinates = list_z_coordinates.get(list_z_coordinates.size()-1);
-            if ( (Math.abs(last_entry_z_coordinates - first_entry_z_coordinates)) >= 0.15) {
-                if(last_entry_z_coordinates > first_entry_z_coordinates) {
-                    myViewer("StartPosition" );
-                    gesture = 1;
-                    return true;
-                }
-                else {
-                    myViewer("ReceivingPosition");
-                    gesture = 2;
-                    return true;
-                }
-            }
+        if ((counterFingerOpen > 3) && (counterFingerTogether > 3)){
+            return true;
         }
-        gesture = 0;
         return false;
     }
 

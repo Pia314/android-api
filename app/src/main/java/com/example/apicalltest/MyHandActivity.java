@@ -7,12 +7,15 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.solutioncore.SolutionGlSurfaceView;
 import com.google.mediapipe.solutions.hands.Hands;
 import com.google.mediapipe.solutions.hands.HandsResult;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +27,20 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MyHandActivity extends HandsActivity{
-    private List<Float> list_z_coordinates=new ArrayList<Float>();
+    
+    protected static double DISTANCE_THRESHOLD = 0.25;
+    protected static int N_SECONDS_COOLDOWN = 5;
+    protected static int N_FRAMES_TO_CHANGE = 3;
 
-    protected static double DISTANCE = 0.2;
-    protected static double Z_DISTANCE = 0.3;
+    private enum GestureTypes{
+        NO_GESTURE_INITIALIZED,
+        OPEN_FINGERS,
+        CLOSED_FINGERS
+    };
 
     Timer cooldownTimer;
     int cooldown = 0;
-    int  gesture = 0; //  1 for Finger open  && for Finger together 2
+    GestureTypes gesture = GestureTypes.NO_GESTURE_INITIALIZED;
     int counterFingerOpen = 0;
     int counterFingerTogether = 0;
 
@@ -61,6 +70,7 @@ public class MyHandActivity extends HandsActivity{
         {
             public void run()
             {
+                updateDebug();
                 if (cooldown > 0){
                     cooldown -= 1;
                 }
@@ -93,7 +103,7 @@ public class MyHandActivity extends HandsActivity{
         }
 
         if(isRecognizingGesture(result)) {
-            if(gesture == 2) {
+            if(gesture == GestureTypes.CLOSED_FINGERS) {
                 // PULL
                 // TO uncomment when everything else is working, not before
                 // else it will kill my credit card :)
@@ -102,8 +112,8 @@ public class MyHandActivity extends HandsActivity{
                 coolToast("START GESTURE RECOGNIZED");
                 counterFingerOpen = 0;
                 counterFingerTogether = 0;
-                gesture = 0;
-            } else if ( gesture == 1) {
+                gesture = GestureTypes.NO_GESTURE_INITIALIZED;
+            } else if ( gesture == GestureTypes.OPEN_FINGERS) {
                 // DROP
                 // TO uncomment when everything else is working, not before
                 // else it will kill my credit card :)
@@ -112,14 +122,26 @@ public class MyHandActivity extends HandsActivity{
                 coolToast("RECEIVE GESTURE RECOGNIZED");
                 counterFingerOpen = 0;
                 counterFingerTogether = 0;
-                gesture = 0;
+                gesture = GestureTypes.NO_GESTURE_INITIALIZED;
             }
             Log.d("cool", "gesture recogized");
             //list_z_coordinates.clear();
-            cooldown = 5; // 5 SECONDS OF COOLDOWN
+            cooldown = N_SECONDS_COOLDOWN;
         }
     }
 
+    private void updateDebug(){
+        runOnUiThread(new Runnable() {
+            public void run()
+            {
+                TextView t = ((TextView)findViewById(R.id.debug1));
+                if (t != null){
+                    String s = "Cooldown: " + cooldown + "\n Gesture: " + gesture;
+                    t.setText(s);
+                }
+            }
+        });
+    }
 
     private void coolToast(String str){
         runOnUiThread(new Runnable() {
@@ -131,19 +153,19 @@ public class MyHandActivity extends HandsActivity{
     }
 
     private void setGestureFingerOpen(){
-        if(gesture != 1){
+        if(gesture != GestureTypes.OPEN_FINGERS){
             counterFingerOpen = 0;
         }
         counterFingerOpen++;
-        gesture = 1;
+        gesture = GestureTypes.OPEN_FINGERS;
     }
 
     private void setGestureFingerTogether(){
-        if(gesture != 2){
+        if(gesture != GestureTypes.CLOSED_FINGERS){
             counterFingerTogether = 0;
         }
         counterFingerTogether++;
-        gesture = 2;
+        gesture = GestureTypes.CLOSED_FINGERS;
     }
 
     private boolean AreThreeFingersTogether(float[] finger1, float[] finger2, float[] finger3) {
@@ -151,8 +173,8 @@ public class MyHandActivity extends HandsActivity{
         float x_coordinate_difference_pairwise_sum = Math.abs(finger1[0] - finger2[0]) + Math.abs(finger1[0] - finger3[0]) + Math.abs(finger2[0] - finger3[0]);
         float y_coordinate_difference_pairwise_sum = Math.abs(finger1[1] - finger2[1]) + Math.abs(finger1[1] - finger3[1]) + Math.abs(finger2[1] - finger3[1]);
         //float z_coordinate_difference_pairwise_sum = Math.abs(finger1[2] - finger2[2]) + Math.abs(finger1[2] - finger3[2]) + Math.abs(finger2[2] - finger3[2]);
-        boolean x_close = x_coordinate_difference_pairwise_sum <= 0.25 ;
-        boolean y_close = y_coordinate_difference_pairwise_sum  <= 0.25;
+        boolean x_close = x_coordinate_difference_pairwise_sum <= DISTANCE_THRESHOLD ;
+        boolean y_close = y_coordinate_difference_pairwise_sum  <= DISTANCE_THRESHOLD;
         //float z_close = z_coordinate_difference_pairwise_sum;// <= 0.25;
 
         boolean together = (x_close) && (y_close);
@@ -200,15 +222,12 @@ public class MyHandActivity extends HandsActivity{
         } else if (threeFingersOpen) {
             setGestureFingerOpen();
         } else {
-            gesture = 0;
+            gesture = GestureTypes.NO_GESTURE_INITIALIZED;
             counterFingerOpen = 0;
             counterFingerTogether = 0;
         }
 
-        if ((counterFingerOpen > 3) && (counterFingerTogether > 3)){
-            return true;
-        }
-        return false;
+        return (counterFingerOpen > N_FRAMES_TO_CHANGE) && (counterFingerTogether > N_FRAMES_TO_CHANGE);
     }
 
     private void postMessageToEveryone(String myUsername, String message, String openableBy) {

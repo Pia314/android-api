@@ -1,7 +1,9 @@
 package com.example.apicalltest;
 
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
@@ -27,10 +29,11 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MyHandActivity extends HandsActivity{
-    
+
     protected static double DISTANCE_THRESHOLD = 0.25;
     protected static int N_SECONDS_COOLDOWN = 5;
     protected static int N_FRAMES_TO_CHANGE = 3;
+    protected static boolean debug = true;
 
     private enum GestureTypes{
         NO_GESTURE_INITIALIZED,
@@ -44,6 +47,8 @@ public class MyHandActivity extends HandsActivity{
     int counterFingerOpen = 0;
     int counterFingerTogether = 0;
 
+    String username = "DefaultNonInitializedUsername";
+
 
 
     @Override
@@ -51,6 +56,8 @@ public class MyHandActivity extends HandsActivity{
         super.onCreate(savedInstanceState);
         cooldownTimer = new Timer();
         startTimer();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        username = preferences.getString("username", "DEFAULT");
     }
 
     @Override
@@ -70,10 +77,10 @@ public class MyHandActivity extends HandsActivity{
         {
             public void run()
             {
-                updateDebug();
                 if (cooldown > 0){
                     cooldown -= 1;
                 }
+                if (debug){updateDebug();}
             }
         }, 1000, 1000);
     }
@@ -96,9 +103,15 @@ public class MyHandActivity extends HandsActivity{
 
     private void checkGesture(HandsResult result){
         if (cooldown != 0){
+            gesture = GestureTypes.NO_GESTURE_INITIALIZED;
+            counterFingerOpen = 0;
+            counterFingerTogether = 0;
             return;
         }
         if (result.multiHandLandmarks().isEmpty()) {
+            gesture = GestureTypes.NO_GESTURE_INITIALIZED;
+            counterFingerOpen = 0;
+            counterFingerTogether = 0;
             return;
         }
 
@@ -107,9 +120,9 @@ public class MyHandActivity extends HandsActivity{
                 // PULL
                 // TO uncomment when everything else is working, not before
                 // else it will kill my credit card :)
-                // postMessageToEveryone("myUsername", "message", "openableBy");
+                postMessageToEveryone(username, "Sample message", null);
                 animateColor("#FF0000");
-                coolToast("START GESTURE RECOGNIZED");
+                //if (debug)coolToast("CLOSE GESTURE RECOGNIZED");
                 counterFingerOpen = 0;
                 counterFingerTogether = 0;
                 gesture = GestureTypes.NO_GESTURE_INITIALIZED;
@@ -117,15 +130,14 @@ public class MyHandActivity extends HandsActivity{
                 // DROP
                 // TO uncomment when everything else is working, not before
                 // else it will kill my credit card :)
-                //retrieveMessage("username", "requester");
+                retrieveMessage(username, username);
                 animateColor("#00FF00");
-                coolToast("RECEIVE GESTURE RECOGNIZED");
+                //if (debug)coolToast("OPEN GESTURE RECOGNIZED");
                 counterFingerOpen = 0;
                 counterFingerTogether = 0;
                 gesture = GestureTypes.NO_GESTURE_INITIALIZED;
             }
             Log.d("cool", "gesture recogized");
-            //list_z_coordinates.clear();
             cooldown = N_SECONDS_COOLDOWN;
         }
     }
@@ -137,6 +149,7 @@ public class MyHandActivity extends HandsActivity{
                 TextView t = ((TextView)findViewById(R.id.debug1));
                 if (t != null){
                     String s = "Cooldown: " + cooldown + "\n Gesture: " + gesture;
+                    s += "\ncounterOpen: " + counterFingerOpen + "\n counterClosed: " + counterFingerTogether;
                     t.setText(s);
                 }
             }
@@ -231,15 +244,17 @@ public class MyHandActivity extends HandsActivity{
     }
 
     private void postMessageToEveryone(String myUsername, String message, String openableBy) {
+        Log.d("salut1", myUsername);
         Call<APIStructures.Message> call = RetrofitClient.getInstance().getMyApi().sendMessageToEveryone(myUsername, message, openableBy);
-        Log.d("d", call.request().toString());
+        //Call<APIStructures.Message> call = RetrofitClient.getInstance().getMyApi().sendMessage(myUsername, myUsername, message, openableBy);
+        Log.d("salut", call.request().toString());
         call.enqueue(new Callback<APIStructures.Message>() {
             @Override
             public void onResponse(Call<APIStructures.Message> call, Response<APIStructures.Message> response) {
                 APIStructures.Message result = response.body();
-                Log.d("d", response.toString());
+                Log.d("salut", response.toString());
                 try {
-                    myViewer("Message uploaded.");
+                    coolToast("Message uploaded.");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -247,27 +262,31 @@ public class MyHandActivity extends HandsActivity{
 
             @Override
             public void onFailure(Call<APIStructures.Message> call, Throwable t) {
-                myViewer("ERROR on upload.");
+                coolToast("ERROR on upload.");
             }
         });
     }
 
-    private void retrieveMessage(String username, String requester) {
+    public void retrieveMessage(String username, String requester){
+        //coolToast("a");
         Call<APIStructures.MessageOut> call = RetrofitClient.getInstance().getMyApi().getMessages(username, requester);
         call.enqueue(new Callback<APIStructures.MessageOut>() {
-
             @Override
             public void onResponse(Call<APIStructures.MessageOut> call, Response<APIStructures.MessageOut> response) {
                 APIStructures.MessageOut result = response.body();
                 try {
+                    APIStructures.Message msg = result.get();
+                    String out = msg.asOutputMessage();
+                    coolToast(out);
+                    //lastMessage = out;
+                    //refreshText();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-
             @Override
             public void onFailure(Call<APIStructures.MessageOut> call, Throwable t) {
-                myViewer("ERROR");
+                coolToast("No message in inbox");
             }
         });
     }

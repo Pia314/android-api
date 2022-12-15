@@ -60,6 +60,7 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
     String username = "DEFAULT";
     String lastMessage = "NO LAST MESSAGE";
 
+
     HashMap<String, Integer> cooldownMap;
     Timer cooldownTimer;
 
@@ -336,6 +337,6 @@ public class QRScanActivity extends CameraActivity implements CvCameraViewListen
         frameLayout.setAlpha(1);
         frameLayout.setBackgroundColor(Color.parseColor(color));
         frameLayout.startAnimation(animation1);
-    }
 
+    }
 }

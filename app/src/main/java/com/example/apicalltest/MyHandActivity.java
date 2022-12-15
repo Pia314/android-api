@@ -1,18 +1,25 @@
 package com.example.apicalltest;
 
+import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.solutioncore.SolutionGlSurfaceView;
 import com.google.mediapipe.solutions.hands.Hands;
 import com.google.mediapipe.solutions.hands.HandsResult;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,19 +31,35 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MyHandActivity extends HandsActivity{
-    private List<Float> list_z_coordinates=new ArrayList<Float>();
 
-    protected static double DISTANCE = 0.2;
-    protected static double Z_DISTANCE = 0.3;
+    protected static double DISTANCE_THRESHOLD = 0.25;
+    protected static int N_SECONDS_COOLDOWN = 3;
+    protected static int N_FRAMES_TO_CHANGE = 1;
+    protected static boolean debug = true;
+
+    private enum GestureTypes{
+        NO_GESTURE_INITIALIZED,
+        OPEN_FINGERS,
+        CLOSED_FINGERS
+    };
 
     Timer cooldownTimer;
     int cooldown = 0;
+    GestureTypes gesture = GestureTypes.NO_GESTURE_INITIALIZED;
+    int counterFingerOpen = 0;
+    int counterFingerTogether = 0;
+
+    String username = "DefaultNonInitializedUsername";
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         cooldownTimer = new Timer();
         startTimer();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        username = preferences.getString("username", "DEFAULT");
     }
 
     @Override
@@ -59,6 +82,7 @@ public class MyHandActivity extends HandsActivity{
                 if (cooldown > 0){
                     cooldown -= 1;
                 }
+                if (debug){updateDebug();}
             }
         }, 1000, 1000);
     }
@@ -81,104 +105,123 @@ public class MyHandActivity extends HandsActivity{
 
     private void checkGesture(HandsResult result){
         if (cooldown != 0){
+            gesture = GestureTypes.NO_GESTURE_INITIALIZED;
+            counterFingerOpen = 0;
+            counterFingerTogether = 0;
             return;
         }
         if (result.multiHandLandmarks().isEmpty()) {
+            gesture = GestureTypes.NO_GESTURE_INITIALIZED;
+            counterFingerOpen = 0;
+            counterFingerTogether = 0;
             return;
         }
-        boolean gestureRecognized = false;
 
-        if(isStartSharingPosition(result)){ // PULL
-            gestureRecognized = true;
-            // TO uncomment when everything else is wokring, not before
-            // else it will kill my credit card :)
-            // postMessageToEveryone("myUsername", "message", "openableBy");
-            animateColor("#FF0000");
-        }
-        else if(isReceivingPosition(result)){ // DROP
-            gestureRecognized = true;
-            // TO uncomment when everything else is wokring, not before
-            // else it will kill my credit card :)
-            //retrieveMessage("username", "requester");
-            animateColor("#00FF00");
-        }
-
-        if (gestureRecognized) {
+        if(isRecognizingGesture(result)) {
+            if(gesture == GestureTypes.CLOSED_FINGERS) {
+                // PULL
+                // TO uncomment when everything else is working, not before
+                // else it will kill my credit card :)
+                postMessageToEveryone(username, "Sample message", null);
+                animateColor("#FF0000");
+                //if (debug)coolToast("CLOSE GESTURE RECOGNIZED");
+                counterFingerOpen = 0;
+                counterFingerTogether = 0;
+                gesture = GestureTypes.NO_GESTURE_INITIALIZED;
+            } else if ( gesture == GestureTypes.OPEN_FINGERS) {
+                // DROP
+                // TO uncomment when everything else is working, not before
+                // else it will kill my credit card :)
+                retrieveMessage(username, username);
+                animateColor("#00FF00");
+                //if (debug)coolToast("OPEN GESTURE RECOGNIZED");
+                counterFingerOpen = 0;
+                counterFingerTogether = 0;
+                gesture = GestureTypes.NO_GESTURE_INITIALIZED;
+            }
             Log.d("cool", "gesture recogized");
-            list_z_coordinates.clear();
-            coolToast("GESTURE RECOGNIZED");
-            cooldown = 5; // 5 SECOINDS OF COOLDOWN
+            cooldown = N_SECONDS_COOLDOWN;
         }
     }
 
+    private void updateDebug(){
+        runOnUiThread(new Runnable() {
+            public void run()
+            {
+                TextView t = ((TextView)findViewById(R.id.debug1));
+                if (t != null){
+                    String s = "Cooldown: " + cooldown + "\n Gesture: " + gesture;
+                    s += "\ncounterOpen: " + counterFingerOpen + "\n counterClosed: " + counterFingerTogether;
+                    t.setText(s);
+                }
+            }
+        });
+    }
 
     private void coolToast(String str){
         runOnUiThread(new Runnable() {
             public void run()
             {
-                Toast.makeText(getApplicationContext(), str, Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private boolean isStartSharingPosition(HandsResult result) {
-        // TODO PIA
-        // here i want to code if the start position (first three landmarks are together and changing z coordinates in the right direction)
-
-        //to access the landmarks
-        List<LandmarkProto.NormalizedLandmark> landmarkList = result.multiHandLandmarks().get(0).getLandmarkList();
-        // See here https://google.github.io/mediapipe/solutions/hands.html#hand-landmark-model
-        float[] thumb_tip = {landmarkList.get(4).getX(), landmarkList.get(4).getY(), landmarkList.get(4).getZ()};
-        float[] index_finger_tip = {landmarkList.get(8).getX(), landmarkList.get(8).getY(), landmarkList.get(8).getZ()};
-        float[] middle_finger_tip = {landmarkList.get(12).getX(), landmarkList.get(12).getY(), landmarkList.get(12).getZ()};
-        float[] ring_finger_tip = {landmarkList.get(16).getX(), landmarkList.get(16).getY(), landmarkList.get(16).getZ()};
-        // are three of the for point near together?
-        boolean threeFingersTogether = AreThreeFingersTogether(thumb_tip, index_finger_tip, middle_finger_tip) || AreThreeFingersTogether(thumb_tip, middle_finger_tip, ring_finger_tip);
-
-        if (threeFingersTogether) {
-            // if yes add mean of z coordinates to List
-            float mean_z_coordinates = (thumb_tip[2] + middle_finger_tip[2])/2;
-            list_z_coordinates.add(mean_z_coordinates);
-            myViewer("mean z coordinates" + mean_z_coordinates );
+    private void setGestureFingerOpen(){
+        if(gesture != GestureTypes.OPEN_FINGERS){
+            counterFingerOpen = 0;
         }
+        counterFingerOpen++;
+        gesture = GestureTypes.OPEN_FINGERS;
+    }
 
-        if (list_z_coordinates.size() >= 10) {
-            myViewer("diff z coordinates" + (list_z_coordinates.get(list_z_coordinates.size()-1) - list_z_coordinates.get(0)));
-            myViewer("last z coordinates" + list_z_coordinates.get(list_z_coordinates.size()-1) );
-            myViewer("first z coordinates" + list_z_coordinates.get(0));
-            if(((list_z_coordinates.get(list_z_coordinates.size()-1) - list_z_coordinates.get(0)) >= Z_DISTANCE) && (list_z_coordinates.get(list_z_coordinates.size()-1) >= list_z_coordinates.get(0))) {
-                myViewer("StartSharingPosition");
-                return true;
-            }
+    private void setGestureFingerTogether(){
+        if(gesture != GestureTypes.CLOSED_FINGERS){
+            counterFingerTogether = 0;
         }
-
-        return false;
+        counterFingerTogether++;
+        gesture = GestureTypes.CLOSED_FINGERS;
     }
 
     private boolean AreThreeFingersTogether(float[] finger1, float[] finger2, float[] finger3) {
         // TODO PIA
         float x_coordinate_difference_pairwise_sum = Math.abs(finger1[0] - finger2[0]) + Math.abs(finger1[0] - finger3[0]) + Math.abs(finger2[0] - finger3[0]);
         float y_coordinate_difference_pairwise_sum = Math.abs(finger1[1] - finger2[1]) + Math.abs(finger1[1] - finger3[1]) + Math.abs(finger2[1] - finger3[1]);
-        float z_coordinate_difference_pairwise_sum = Math.abs(finger1[2] - finger2[2]) + Math.abs(finger1[2] - finger3[2]) + Math.abs(finger2[2] - finger3[2]);
-        boolean x_close = x_coordinate_difference_pairwise_sum <= DISTANCE;
-        boolean y_close = x_coordinate_difference_pairwise_sum <= DISTANCE;
-        boolean z_close = x_coordinate_difference_pairwise_sum <= DISTANCE;
+        //float z_coordinate_difference_pairwise_sum = Math.abs(finger1[2] - finger2[2]) + Math.abs(finger1[2] - finger3[2]) + Math.abs(finger2[2] - finger3[2]);
+        boolean x_close = x_coordinate_difference_pairwise_sum <= DISTANCE_THRESHOLD ;
+        boolean y_close = y_coordinate_difference_pairwise_sum  <= DISTANCE_THRESHOLD;
+        //float z_close = z_coordinate_difference_pairwise_sum;// <= 0.25;
 
-        boolean together = (x_close) && (y_close) && (z_close);
+        boolean together = (x_close) && (y_close);
 
         myViewer("x_close :" + x_close);
         myViewer("y_close :" + y_close);
-        myViewer("z_close :" + z_close);
-        myViewer("together :" + together);
+        //myViewer("z_close :" + z_close);
+       // myViewer("together :" + together);
 
-        return together;
+        return together; // together;
     }
 
-    private boolean isReceivingPosition(HandsResult result) {
+    private boolean AreThreeFingersOpen(float[] finger1, float[] finger2, float[] finger3) {
         // TODO PIA
-        // here i want to code if receiving position (first three landmarks are together and changing z coordinates in the right (going closer to the screen) direction)
+        float x_coordinate_difference_pairwise_sum = Math.abs(finger1[0] - finger2[0]) + Math.abs(finger1[0] - finger3[0]) + Math.abs(finger2[0] - finger3[0]);
+        float y_coordinate_difference_pairwise_sum = Math.abs(finger1[1] - finger2[1]) + Math.abs(finger1[1] - finger3[1]) + Math.abs(finger2[1] - finger3[1]);
+        //float z_coordinate_difference_pairwise_sum = Math.abs(finger1[2] - finger2[2]) + Math.abs(finger1[2] - finger3[2]) + Math.abs(finger2[2] - finger3[2]);
+        boolean x_open = x_coordinate_difference_pairwise_sum  >  0.25 ;
+        boolean y_open = y_coordinate_difference_pairwise_sum  > 0.25;
+        //float z_close = z_coordinate_difference_pairwise_sum;// <= 0.25;
 
-        //to access the landmarks
+        boolean open = (x_open) || (y_open);
+
+        myViewer("x_open :" + x_open);
+        myViewer("y_open :" + y_open);
+        //myViewer("z_close :" + z_close);
+        // myViewer("together :" + together);
+
+        return open; // together;
+    }
+
+    private boolean isRecognizingGesture(HandsResult result) {
         List<LandmarkProto.NormalizedLandmark> landmarkList = result.multiHandLandmarks().get(0).getLandmarkList();
         // See here https://google.github.io/mediapipe/solutions/hands.html#hand-landmark-model
         float[] thumb_tip = {landmarkList.get(4).getX(), landmarkList.get(4).getY(), landmarkList.get(4).getZ()};
@@ -186,42 +229,34 @@ public class MyHandActivity extends HandsActivity{
         float[] middle_finger_tip = {landmarkList.get(12).getX(), landmarkList.get(12).getY(), landmarkList.get(12).getZ()};
         float[] ring_finger_tip = {landmarkList.get(16).getX(), landmarkList.get(16).getY(), landmarkList.get(16).getZ()};
 
-        // are three of the for point near together?
         boolean threeFingersTogether = AreThreeFingersTogether(thumb_tip, index_finger_tip, middle_finger_tip) || AreThreeFingersTogether(thumb_tip, middle_finger_tip, ring_finger_tip);
+        boolean threeFingersOpen = AreThreeFingersOpen(thumb_tip, index_finger_tip, middle_finger_tip) || AreThreeFingersOpen(thumb_tip, middle_finger_tip, ring_finger_tip);
 
         if (threeFingersTogether) {
-
+            setGestureFingerTogether();
+        } else if (threeFingersOpen) {
+            setGestureFingerOpen();
+        } else {
+            gesture = GestureTypes.NO_GESTURE_INITIALIZED;
+            counterFingerOpen = 0;
+            counterFingerTogether = 0;
         }
 
-        if (threeFingersTogether) {
-            // if yes add mean of z coordinates to List
-            float mean_z_coordinates = (thumb_tip[2] + middle_finger_tip[2])/2;
-            list_z_coordinates.add(mean_z_coordinates);
-        }
-
-        if (list_z_coordinates.size() >= 10) {
-            myViewer("diff z coordinates" + (list_z_coordinates.get(list_z_coordinates.size()-1) - list_z_coordinates.get(0)));
-            myViewer("last z coordinates" + list_z_coordinates.get(list_z_coordinates.size()-1) );
-            myViewer("first z coordinates" + list_z_coordinates.get(0));
-            if ( true) { //(list_z_coordinates.get(list_z_coordinates.size()-1) - list_z_coordinates.get(0) >= Z_DISTANCE)  && ( list_z_coordinates.get(list_z_coordinates.size()-1) >= list_z_coordinates.get(0)) ){
-                myViewer("ReceivingPosition" );
-                return true;
-            }
-        }
-
-        return false;
+        return (counterFingerOpen > N_FRAMES_TO_CHANGE) && (counterFingerTogether > N_FRAMES_TO_CHANGE);
     }
 
     private void postMessageToEveryone(String myUsername, String message, String openableBy) {
+        Log.d("salut1", myUsername);
         Call<APIStructures.Message> call = RetrofitClient.getInstance().getMyApi().sendMessageToEveryone(myUsername, message, openableBy);
-        Log.d("d", call.request().toString());
+        //Call<APIStructures.Message> call = RetrofitClient.getInstance().getMyApi().sendMessage(myUsername, myUsername, message, openableBy);
+        Log.d("salut", call.request().toString());
         call.enqueue(new Callback<APIStructures.Message>() {
             @Override
             public void onResponse(Call<APIStructures.Message> call, Response<APIStructures.Message> response) {
                 APIStructures.Message result = response.body();
-                Log.d("d", response.toString());
+                Log.d("salut", response.toString());
                 try {
-                    myViewer("Message uploaded.");
+                    coolToast("Message uploaded.");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -229,34 +264,38 @@ public class MyHandActivity extends HandsActivity{
 
             @Override
             public void onFailure(Call<APIStructures.Message> call, Throwable t) {
-                myViewer("ERROR on upload.");
+                coolToast("ERROR on upload.");
             }
         });
     }
 
-    private void retrieveMessage(String username, String requester) {
+    public void retrieveMessage(String username, String requester){
+        //coolToast("a");
         Call<APIStructures.MessageOut> call = RetrofitClient.getInstance().getMyApi().getMessages(username, requester);
         call.enqueue(new Callback<APIStructures.MessageOut>() {
-
             @Override
             public void onResponse(Call<APIStructures.MessageOut> call, Response<APIStructures.MessageOut> response) {
                 APIStructures.MessageOut result = response.body();
                 try {
+                    APIStructures.Message msg = result.get();
+                    String out = msg.asOutputMessage();
+                    coolToast(out);
+                    //lastMessage = out;
+                    //refreshText();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-
             @Override
             public void onFailure(Call<APIStructures.MessageOut> call, Throwable t) {
-                myViewer("ERROR");
+                coolToast("No message in inbox");
             }
         });
     }
 
     public void myViewer(String str) {
         // TODO: add View to render Information text. Toast is not working here
-        Log.d("d", str);
+        Log.d("GESTURE", str);
     }
     public void animateColor(String color) {
         FrameLayout frameLayout = findViewById(R.id.michel2);
@@ -284,6 +323,25 @@ public class MyHandActivity extends HandsActivity{
         frameLayout.setAlpha(1);
         frameLayout.setBackgroundColor(Color.parseColor(color));
         frameLayout.startAnimation(animation1);
+    }
+
+    public void setVisibility(View view){
+        SolutionGlSurfaceView<HandsResult> glSurfaceView = getGlSurfaceView();
+        if (glSurfaceView.getVisibility() == View.VISIBLE){
+            glSurfaceView.setVisibility(View.INVISIBLE);
+        }else{
+            glSurfaceView.setVisibility(View.VISIBLE);
+        }
+        setGlSurfaceView(glSurfaceView);
+    }
+
+    public void setVisibilityText(View view){
+        TextView textView = (TextView) findViewById(R.id.debug1);
+        if (textView.getCurrentTextColor() == Color.BLACK){
+            textView.setTextColor(Color.WHITE);
+        }else{
+            textView.setTextColor(Color.BLACK);
+        }
     }
 
 }

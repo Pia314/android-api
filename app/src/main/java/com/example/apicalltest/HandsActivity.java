@@ -90,8 +90,8 @@ public class HandsActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_hands);
-    setupStaticImageDemoUiComponents();
-    setupVideoDemoUiComponents();
+    //setupStaticImageDemoUiComponents();
+    //setupVideoDemoUiComponents();
     setupLiveDemoUiComponents();
   }
 
@@ -346,10 +346,10 @@ public class HandsActivity extends AppCompatActivity {
 
     // Updates the preview layout.
     FrameLayout frameLayout = findViewById(R.id.preview_display_layout);
-    imageView.setVisibility(View.GONE);
+    //imageView.setVisibility(View.GONE);
     frameLayout.removeAllViewsInLayout();
     frameLayout.addView(glSurfaceView);
-    glSurfaceView.setVisibility(View.VISIBLE);
+    glSurfaceView.setVisibility(View.INVISIBLE);
     frameLayout.requestLayout();
   }
 

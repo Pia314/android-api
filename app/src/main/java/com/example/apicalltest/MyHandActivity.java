@@ -2,9 +2,11 @@ package com.example.apicalltest;
 
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
@@ -31,8 +33,8 @@ import retrofit2.Response;
 public class MyHandActivity extends HandsActivity{
 
     protected static double DISTANCE_THRESHOLD = 0.25;
-    protected static int N_SECONDS_COOLDOWN = 5;
-    protected static int N_FRAMES_TO_CHANGE = 3;
+    protected static int N_SECONDS_COOLDOWN = 3;
+    protected static int N_FRAMES_TO_CHANGE = 1;
     protected static boolean debug = true;
 
     private enum GestureTypes{
@@ -160,7 +162,7 @@ public class MyHandActivity extends HandsActivity{
         runOnUiThread(new Runnable() {
             public void run()
             {
-                Toast.makeText(getApplicationContext(), str, Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -321,6 +323,25 @@ public class MyHandActivity extends HandsActivity{
         frameLayout.setAlpha(1);
         frameLayout.setBackgroundColor(Color.parseColor(color));
         frameLayout.startAnimation(animation1);
+    }
+
+    public void setVisibility(View view){
+        SolutionGlSurfaceView<HandsResult> glSurfaceView = getGlSurfaceView();
+        if (glSurfaceView.getVisibility() == View.VISIBLE){
+            glSurfaceView.setVisibility(View.INVISIBLE);
+        }else{
+            glSurfaceView.setVisibility(View.VISIBLE);
+        }
+        setGlSurfaceView(glSurfaceView);
+    }
+
+    public void setVisibilityText(View view){
+        TextView textView = (TextView) findViewById(R.id.debug1);
+        if (textView.getCurrentTextColor() == Color.BLACK){
+            textView.setTextColor(Color.WHITE);
+        }else{
+            textView.setTextColor(Color.BLACK);
+        }
     }
 
 }

@@ -48,6 +48,7 @@ public class MyHandActivity extends HandsActivity{
     GestureTypes gesture = GestureTypes.NO_GESTURE_INITIALIZED;
     int counterFingerOpen = 0;
     int counterFingerTogether = 0;
+    boolean isDemoVersion = true; // show and hide an image with the transfer for the talk demo
 
     String username = "DefaultNonInitializedUsername";
 
@@ -123,7 +124,8 @@ public class MyHandActivity extends HandsActivity{
                 // TO uncomment when everything else is working, not before
                 // else it will kill my credit card :)
                 postMessageToEveryone(username, "Sample message", null);
-                animateColor("#FF0000");
+                if (isDemoVersion)animateColor("#FF0000");
+                hidePicture();
                 //if (debug)coolToast("CLOSE GESTURE RECOGNIZED");
                 counterFingerOpen = 0;
                 counterFingerTogether = 0;
@@ -134,6 +136,7 @@ public class MyHandActivity extends HandsActivity{
                 // else it will kill my credit card :)
                 retrieveMessage(username, username);
                 animateColor("#00FF00");
+                if (isDemoVersion)showPicture();
                 //if (debug)coolToast("OPEN GESTURE RECOGNIZED");
                 counterFingerOpen = 0;
                 counterFingerTogether = 0;
@@ -342,6 +345,28 @@ public class MyHandActivity extends HandsActivity{
         }else{
             textView.setTextColor(Color.BLACK);
         }
+    }
+
+    public void showHidePicture(View view){
+        if (isDemoVersion)showHidePicture2();
+    }
+
+    public void showHidePicture2(){
+        FrameLayout frameLayout = (FrameLayout) findViewById(R.id.picture);
+        if (frameLayout.getAlpha() <= (float)0.01){
+            showPicture();
+        }else{
+            hidePicture();
+        }
+    }
+
+    public void hidePicture(){
+        FrameLayout frameLayout = (FrameLayout) findViewById(R.id.picture);
+        frameLayout.setAlpha((float).01);
+    }
+    public void showPicture(){
+        FrameLayout frameLayout = (FrameLayout) findViewById(R.id.picture);
+        frameLayout.setAlpha((float)1);
     }
 
 }
